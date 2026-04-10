@@ -1,0 +1,99 @@
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
+import { Http } from '@capacitor/http';
+import { type Node } from './types';
+import { type NativeFS, type NativeHTTP, type Platform } from './native-bridge';
+
+/**
+ * Core implementation of the Singularity Native Bridge using @capacitor/http.
+ */
+
+export const getPlatform = (): Platform => {
+  const capPlatform = Capacitor.getPlatform();
+  if (capPlatform === 'android' || capPlatform === 'ios' || capPlatform === 'web') {
+    return capPlatform;
+  }
+  return 'web';
+};
+
+export const nativeFS: NativeFS = {
+  writeNode: async (node: Node, projectPath: string) => {
+    const platform = getPlatform();
+    const fileName = `${node.id}.md`;
+    const content = `---\ntitle: ${node.title}\ntype: ${node.type}\n---\n\n${node.description}`;
+
+    if (platform === 'web') {
+      localStorage.setItem(`node_${node.id}`, JSON.stringify(node));
+      return;
+    }
+
+    await Filesystem.writeFile({
+      path: `${projectPath}/${fileName}`,
+      data: content,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8,
+      recursive: true
+    });
+  },
+
+  readNode: async (filePath: string) => {
+    const platform = getPlatform();
+    if (platform === 'web') throw new Error('Not supported on web');
+
+    const result = await Filesystem.readFile({
+      path: filePath,
+      directory: Directory.Documents,
+      encoding: Encoding.UTF8
+    });
+
+    return {
+      id: filePath.split('/').pop()?.replace('.md', '') || 'unknown',
+      type: 'IDEA',
+      title: 'Parsed Node',
+      description: result.data as string,
+      data: {},
+      metadata: {},
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+  },
+
+  scanDir: async (path: string) => {
+    const platform = getPlatform();
+    if (platform === 'web') return [];
+
+    const result = await Filesystem.readdir({
+      path,
+      directory: Directory.Documents
+    });
+
+    return result.files.map(f => f.name);
+  },
+
+  requestPermissions: async () => {
+    const platform = getPlatform();
+    if (platform === 'web') return true;
+
+    const status = await Filesystem.requestPermissions();
+    return status.publicStorage === 'granted';
+  }
+};
+
+export const nativeHTTP: NativeHTTP = {
+  downloadFile: async (url: string, targetPath: string, onProgress: (p: number) => void) => {
+    const platform = getPlatform();
+    
+    if (platform === 'web') {
+      window.open(url, '_blank');
+      return;
+    }
+
+    onProgress(10);
+    await Http.downloadFile({
+      url,
+      filePath: targetPath,
+      fileDirectory: Directory.Documents
+    });
+    onProgress(100);
+  }
+};

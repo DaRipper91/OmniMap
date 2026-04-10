@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Continuum
+Comment=Local-first AI Mind Map & Project Intelligence
+Exec=continuum-runner
+Icon=continuum
+Terminal=false
+Type=Application
+Categories=Development;Utility;
