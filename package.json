@@ -24,8 +24,10 @@
   "dependencies": {
     "@capacitor/core": "^8.3.0",
     "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/http": "^0.0.2",
     "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zustand": "^5.0.12"

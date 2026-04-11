@@ -73,6 +73,27 @@ For every development task, the following chain **must** be respected:
 - [x] **Task 6.4: Suggested actions panel.**
 - [x] **Task 6.5: Undo notification surface.**
 
+### Phase 7: Native Mobile UI Overhaul (Material Design 3)
+- [x] **Task 7.1:** Install `@capacitor/haptics` and configure dependencies.
+- [x] **Task 7.2:** Implement `BottomNavigationBar` and refactor `App.tsx` layout.
+- [x] **Task 7.3:** Implement `ProjectDrawer` (Slide-up selection).
+- [x] **Task 7.4:** Apply MD3 Styling (28px radius, tonal surfaces, typography).
+- [x] **Task 7.5:** Integrate Haptics into mutation and capture flows.
+- [x] **Task 7.6:** Implement spring transitions via `framer-motion`.
+
+### Phase 8: Persistence & Stability
+- [x] **Task 8.1:** Harden AI Parser and Fix Interval Leak.
+- [x] **Task 8.2:** Implement LocalStorage fallback.
+- [x] **Task 8.3:** Implement Capacitor Filesystem persistence.
+- [ ] **Task 8.4:** Create Auto-Save debouncer.
+
+### Phase 9: Live Intelligence Integration
+- [ ] **Task 9.1:** Define standard AI Agent Personas (Architect, Researcher, Coder).
+- [ ] **Task 9.2:** Implement `initializeRuntimes` with GPT4All discovery.
+- [ ] **Task 9.3:** Add `isThinking` state and UI feedback (Spinners/Pulse).
+- [ ] **Task 9.4:** Connect `requestAI` to live GPT4All endpoint.
+- [ ] **Task 9.5:** Implement Error/Offline recovery for AI requests.
+
 ---
 
 ## 🚦 Execution Directive
