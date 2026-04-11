@@ -1,0 +1,149 @@
+diff --git a/package-lock.json b/package-lock.json
+index d344175..7688b62 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -12,6 +12,7 @@
+         "@capacitor/core": "^8.3.0",
+         "@capacitor/filesystem": "^8.1.2",
+         "@capacitor/http": "^0.0.2",
++        "@google/generative-ai": "^0.24.1",
+         "framer-motion": "^12.38.0",
+         "react": "^19.2.4",
+         "react-dom": "^19.2.4",
+@@ -144,6 +145,15 @@
+         "tslib": "^2.4.0"
+       }
+     },
++    "node_modules/@google/generative-ai": {
++      "version": "0.24.1",
++      "resolved": "https://registry.npmjs.org/@google/generative-ai/-/generative-ai-0.24.1.tgz",
++      "integrity": "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q==",
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=18.0.0"
++      }
++    },
+     "node_modules/@ionic/cli-framework-output": {
+       "version": "2.2.8",
+       "resolved": "https://registry.npmjs.org/@ionic/cli-framework-output/-/cli-framework-output-2.2.8.tgz",
+diff --git a/package.json b/package.json
+index 128617d..2199da4 100644
+--- a/package.json
++++ b/package.json
+@@ -25,6 +25,7 @@
+     "@capacitor/core": "^8.3.0",
+     "@capacitor/filesystem": "^8.1.2",
+     "@capacitor/http": "^0.0.2",
++    "@google/generative-ai": "^0.24.1",
+     "framer-motion": "^12.38.0",
+     "react": "^19.2.4",
+     "react-dom": "^19.2.4",
+diff --git a/src/ai-bridge.ts b/src/ai-bridge.ts
+index 7d3cb0e..b9f7956 100644
+--- a/src/ai-bridge.ts
++++ b/src/ai-bridge.ts
+@@ -5,32 +5,17 @@ import { type AIRuntime, type AIModel } from './types';
+  * Handles low-level communication with local LLM runtimes.
+  */
+ 
++import { geminiService } from './gemini-service';
++
+ export const callLocalLLM = async (
+   runtime: AIRuntime, 
+   systemPrompt: string, 
+   userPrompt: string
+ ): Promise<string> => {
+   try {
+-    const response = await fetch(`${runtime.baseUrl}/v1/chat/completions`, {
+-      method: 'POST',
+-      headers: { 'Content-Type': 'application/json' },
+-      body: JSON.stringify({
+-        model: 'default', // Local runtimes usually ignore this or have a default
+-        messages: [
+-          { role: 'system', content: systemPrompt },
+-          { role: 'user', content: userPrompt }
+-        ],
+-        temperature: 0.7,
+-        stream: false
+-      })
+-    });
+-
+-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+-    
+-    const data = await response.json();
+-    return data.choices[0]?.message?.content || '';
++    return await geminiService.generateContent(systemPrompt, userPrompt);
+   } catch (error) {
+-    console.error('Failed to call local LLM:', error);
++    console.error('Failed to call Gemini API:', error);
+     throw error;
+   }
+ };
+diff --git a/src/gemini-service.ts b/src/gemini-service.ts
+new file mode 100644
+index 0000000..8f034a9
+--- /dev/null
++++ b/src/gemini-service.ts
+@@ -0,0 +1,61 @@
++import { GoogleGenerativeAI } from '@google/generative-ai';
++
++/**
++ * Service for interacting with Gemini API.
++ */
++export class GeminiService {
++  private genAI: GoogleGenerativeAI;
++  private model: any;
++
++  constructor() {
++    // Attempt to read the API key from Vite environment or Node environment
++    const apiKey = typeof process !== 'undefined' && process.env?.GEMINI_API_KEY
++      ? process.env.GEMINI_API_KEY
++      : (import.meta as any).env?.VITE_GEMINI_API_KEY;
++
++    if (!apiKey) {
++      console.warn("Gemini API key is missing. Please set process.env.GEMINI_API_KEY or VITE_GEMINI_API_KEY.");
++    }
++
++    this.genAI = new GoogleGenerativeAI(apiKey || "");
++    this.model = this.genAI.getGenerativeModel({ model: "gemini-pro" });
++  }
++
++  /**
++   * Helper function to delay execution (sleep).
++   */
++  private async delay(ms: number) {
++    return new Promise(resolve => setTimeout(resolve, ms));
++  }
++
++  /**
++   * Generates content using the Gemini API with retry logic for rate limits and overloaded errors.
++   */
++  public async generateContent(systemPrompt: string, userPrompt: string, maxRetries = 3): Promise<string> {
++    const combinedPrompt = `${systemPrompt}\n\n${userPrompt}`;
++
++    for (let attempt = 1; attempt <= maxRetries; attempt++) {
++      try {
++        const result = await this.model.generateContent(combinedPrompt);
++        const response = await result.response;
++        return response.text();
++      } catch (error: any) {
++        const status = error?.status || error?.response?.status;
++        const isRetryable = status === 429 || status === 503 || error.message?.includes('429') || error.message?.includes('503');
++
++        if (isRetryable && attempt < maxRetries) {
++          const backoff = attempt * 2000; // Exponential or linear backoff
++          console.warn(`Gemini API error (Status: ${status}). Retrying in ${backoff}ms... (Attempt ${attempt}/${maxRetries})`);
++          await this.delay(backoff);
++        } else {
++          console.error("Gemini API Request failed:", error);
++          throw error;
++        }
++      }
++    }
++    
++    throw new Error("Failed to generate content from Gemini API after retries.");
++  }
++}
++
++export const geminiService = new GeminiService();
+

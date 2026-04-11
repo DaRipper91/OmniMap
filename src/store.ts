@@ -19,6 +19,7 @@ import {
   type PromptTemplate
 } from './types';
 import { callLocalLLM } from './ai-bridge';
+import { checkRuntime } from './ai-bridge';
 
 interface ContinuumActions {
   // Graph Actions
@@ -32,11 +33,21 @@ interface ContinuumActions {
   // AI Infrastructure Actions
   registerRuntime: (runtime: AIRuntime) => void;
   updateRuntimeStatus: (id: string, status: AIRuntime['status']) => void;
+  updateRuntime: (id: string, updates: Partial<AIRuntime>) => void;
   addPromptTemplate: (template: PromptTemplate) => void;
   updateDownloadProgress: (modelId: string, progress: number) => void;
-  requestAI: (agentId: string, templateId: string, context: any) => Promise<void>;
+  requestAI: (agentId: string, templateId: string, context: any, retries?: number) => Promise<void>;
   downloadModel: (modelId: string) => Promise<void>;
   initializeRuntimes: () => Promise<void>;
+  
+  // Nexium Bridge Actions
+  refreshPortals: () => Promise<void>;
+  generateBriefing: () => string;
+  openPortal: (repo: string, briefing: string) => Promise<void>;
+  ingestPortalResults: (portalId: string) => Promise<void>;
+  
+  retryQueuedRequests: () => Promise<void>;
+  removeQueuedRequest: (id: string) => void;
 
   // Layout Actions
   updateNodePosition: (nodeId: string, x: number, y: number) => void;
@@ -52,6 +63,7 @@ interface ContinuumActions {
   
   addNote: (note: IdealNote) => void;
   updateNote: (id: string, updates: Partial<IdealNote>) => void;
+  deleteNote: (id: string) => void;
   
   addSuggestedAction: (action: SuggestedAction) => void;
   updateSuggestedAction: (id: string, updates: Partial<SuggestedAction>) => void;
@@ -87,6 +99,7 @@ interface ContinuumActions {
 
   setLastSync: (timestamp: number) => void;
   resetStore: () => void;
+  completeSetup: () => void;
 }
 
 const initialState: ContinuumState = {
@@ -142,6 +155,11 @@ const initialState: ContinuumState = {
   lastSyncTimestamp: 0,
   isScanning: false,
   isThinking: false,
+  aiStatus: 'idle',
+  aiError: null,
+  hasCompletedSetup: false,
+  portals: [],
+  aiRequestQueue: [],
 };
 
 // Custom Capacitor Storage Engine
@@ -236,11 +254,13 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
         });
 
         notes.forEach(n => {
-          newNodes.push({
-            id: n.id, type: 'IDEA', title: 'Ideal Note', description: n.content.substring(0, 50) + '...',
-            data: { content: n.content, tags: n.tags }, metadata: {}, createdAt: n.createdAt, updatedAt: n.updatedAt
-          });
-          if (n.projectId) {
+          if (!newNodes.find(node => node.id === n.id)) {
+            newNodes.push({
+              id: n.id, type: 'IDEA', title: 'Ideal Note', description: n.content.substring(0, 50) + '...',
+              data: { content: n.content, tags: n.tags }, metadata: {}, createdAt: n.createdAt, updatedAt: n.updatedAt
+            });
+          }
+          if (n.projectId && !newEdges.find(e => e.sourceId === n.projectId && e.targetId === n.id)) {
             newEdges.push({ id: `edge-${n.projectId}-${n.id}`, sourceId: n.projectId, targetId: n.id, type: 'PARENT_OF', metadata: {}, createdAt: Date.now() });
           }
         });
@@ -250,6 +270,10 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
 
       registerRuntime: (runtime: AIRuntime) => set((state: ContinuumState) => ({
         runtimes: [...state.runtimes, runtime],
+      })),
+
+      updateRuntime: (id: string, updates: Partial<AIRuntime>) => set((state: ContinuumState) => ({
+        runtimes: state.runtimes.map((r) => r.id === id ? { ...r, ...updates } : r),
       })),
 
       updateRuntimeStatus: (id: string, status: AIRuntime['status']) => set((state: ContinuumState) => ({
@@ -264,22 +288,33 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
         downloadProgress: { ...state.downloadProgress, [modelId]: progress },
       })),
 
-      requestAI: async (agentId: string, templateId: string, context: any) => {
-        set({ isThinking: true });
+      requestAI: async (agentId: string, templateId: string, context: any, retries = 0) => {
+        set({ isThinking: true, aiStatus: retries > 0 ? 'retrying' : 'thinking', aiError: null });
         const state = get();
         const agent = state.agents.find(a => a.id === agentId);
         const template = state.promptTemplates.find(t => t.id === templateId);
         const runtime = state.runtimes.find(r => r.status === 'online');
 
-        if (!agent || !template || !runtime) {
-          console.error('AI Request failed: Missing agent, template, or online runtime.');
-          set({ isThinking: false });
+        if (!agent || !template) {
+          set({ isThinking: false, aiStatus: 'error', aiError: 'Missing agent or prompt template.' });
+          return;
+        }
+
+        if (!runtime) {
+          set({ isThinking: false, aiStatus: 'error', aiError: 'No online runtime available.' });
+          return;
+        }
+
+        const isOnline = await checkRuntime(runtime);
+        if (!isOnline) {
+          get().updateRuntimeStatus(runtime.id, 'offline');
+          set({ isThinking: false, aiStatus: 'error', aiError: 'Runtime unreachable. Marking as offline.' });
           return;
         }
 
         try {
           const userPrompt = template.userPromptFormat.replace('{{content}}', JSON.stringify(context));
-          const rawResponse = await callLocalLLM(runtime, template.systemPrompt, userPrompt);
+          const rawResponse = await callLocalLLM(runtime!, template.systemPrompt, userPrompt);
           
           const jsonBlockRegex = /```json\s*([\s\S]*?)\s*```|({[\s\S]*})/;
           const match = rawResponse.match(jsonBlockRegex);
@@ -293,11 +328,42 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
               payload: mutationPayload.payload,
               agentId: agent.id
             });
+            set({ isThinking: false, aiStatus: 'idle', aiError: null });
+          } else {
+            throw new Error("Invalid response format. No JSON payload found.");
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Inference error:', error);
-        } finally {
-          set({ isThinking: false });
+          if (retries < 2) {
+            const backoffDelay = Math.pow(2, retries) * 1000;
+            setTimeout(() => {
+              get().requestAI(agentId, templateId, context, retries + 1);
+            }, backoffDelay);
+          } else {
+            set({ 
+              isThinking: false, 
+              aiStatus: 'error', 
+              aiError: `AI Request failed: ${error.message || 'Unknown error'}` 
+            });
+          }
+        }
+      },
+
+      removeQueuedRequest: (id: string) => set((state: ContinuumState) => ({
+        aiRequestQueue: state.aiRequestQueue.filter(r => r.id !== id)
+      })),
+
+      retryQueuedRequests: async () => {
+        const state = get();
+        const queue = [...state.aiRequestQueue];
+        if (queue.length === 0) return;
+
+        const runtime = state.runtimes.find(r => r.status === 'online');
+        if (!runtime) return;
+
+        for (const req of queue) {
+          get().removeQueuedRequest(req.id);
+          await get().requestAI(req.agentId, req.templateId, req.context);
         }
       },
 
@@ -359,6 +425,10 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
 
       updateNote: (id: string, updates: Partial<IdealNote>) => set((state: ContinuumState) => ({
         notes: state.notes.map((n) => n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n),
+      })),
+
+      deleteNote: (id: string) => set((state: ContinuumState) => ({
+        notes: state.notes.filter((n) => n.id !== id),
       })),
 
       addSuggestedAction: (action: SuggestedAction) => set((state: ContinuumState) => ({
@@ -436,6 +506,102 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
         const { runtimes } = get();
         for (const runtime of runtimes) {
           get().checkModelHealth(runtime.id);
+        }
+      },
+
+      refreshPortals: async () => {
+        set({ aiStatus: 'thinking' });
+        try {
+          // Use the shell bridge to call the jules CLI
+          const { runShell } = await import('./ai-bridge');
+          const output = await runShell('jules remote list --session');
+          
+          // Basic parser for the jules table output
+          const lines = output.split('\n').filter(l => l.trim() && !l.startsWith('ID'));
+          const newPortals = lines.map(line => {
+            const parts = line.split(/\s{2,}/);
+            return {
+              id: parts[0]?.trim() || '',
+              description: parts[1]?.trim() || '',
+              repo: parts[2]?.trim() || '',
+              lastActive: parts[3]?.trim() || '',
+              status: parts[4]?.trim() || 'Active'
+            };
+          });
+          
+          set({ portals: newPortals, aiStatus: 'idle' });
+        } catch (error) {
+          set({ aiStatus: 'error', aiError: 'Failed to fetch Portals from Nexium.' });
+        }
+      },
+
+      generateBriefing: () => {
+        const state = get();
+        const activeProjectNode = state.nodes.find(n => n.id === state.activeProjectId && n.type === 'PROJECT');
+        const allTasks = state.nodes.filter(n => n.type === 'TASK');
+        const filteredTasks = state.activeProjectId 
+          ? allTasks.filter(t => state.edges.some(e => e.sourceId === state.activeProjectId && e.targetId === t.id))
+          : allTasks;
+        
+        const allNotes = state.nodes.filter(n => n.type === 'IDEA');
+        const filteredNotes = state.activeProjectId
+          ? allNotes.filter(n => state.edges.some(e => e.sourceId === state.activeProjectId && e.targetId === n.id))
+          : allNotes;
+
+        let briefing = `# 🌌 GHOST NEXIUM PORTAL BRIEFING\n`;
+        briefing += `Commander: Gemini CLI (via Continuum App)\n`;
+        briefing += `Specialist: Jules\n\n`;
+        briefing += `## 🎯 MISSION CONTEXT\n`;
+        briefing += `Project: ${activeProjectNode?.title || 'Global Context'}\n`;
+        briefing += `Status: Phase 10 (Master Synchronization)\n\n`;
+        
+        briefing += `## 📋 LOCAL TASK LIST\n`;
+        filteredTasks.forEach(t => {
+          briefing += `- [${t.data?.status === 'done' ? 'x' : ' '}] ${t.title}: ${t.description}\n`;
+        });
+        
+        briefing += `\n## 🧠 RECENT THOUGHTS & NOTES\n`;
+        filteredNotes.slice(-5).forEach(n => {
+          briefing += `> ${n.data?.content || n.description}\n\n`;
+        });
+
+        briefing += `## 🚀 INSTRUCTION\n`;
+        briefing += `Analyze the local state provided above and propose the next logical engineering steps to advance this project. Focus on implementing Task 10.3 (Result Ingestion) logic.`;
+
+        return briefing;
+      },
+
+      openPortal: async (repo: string, briefing: string) => {
+        set({ isThinking: true, aiStatus: 'thinking' });
+        try {
+          const { runShell } = await import('./ai-bridge');
+          await runShell(`jules new --repo "${repo}" "${briefing.replace(/"/g, '\\"')}"`);
+          await get().refreshPortals();
+        } catch (error) {
+          set({ aiStatus: 'error', aiError: 'Failed to open Nexium Portal.' });
+        } finally {
+          set({ isThinking: false });
+        }
+      },
+
+      ingestPortalResults: async (portalId: string) => {
+        set({ isThinking: true, aiStatus: 'thinking' });
+        try {
+          const { runShell } = await import('./ai-bridge');
+          await runShell(`jules remote pull --session "${portalId}" --apply`);
+          
+          // Trigger a filesystem scan to pick up new files/changes
+          const activeProject = get().projects.find(p => p.id === get().activeProjectId);
+          if (activeProject?.path) {
+            await get().scanFilesystem(activeProject.path);
+          }
+          
+          await get().refreshPortals();
+          set({ aiStatus: 'idle' });
+        } catch (error) {
+          set({ aiStatus: 'error', aiError: 'Failed to ingest Portal results.' });
+        } finally {
+          set({ isThinking: false });
         }
       },
 
@@ -591,6 +757,7 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
 
       setLastSync: (timestamp: number) => set({ lastSyncTimestamp: timestamp }),
       resetStore: () => set(initialState),
+      completeSetup: () => set({ hasCompletedSetup: true }),
     }),
     {
       name: 'continuum-storage',
@@ -598,6 +765,7 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
+        layout: state.layout,
         projects: state.projects,
         tasks: state.tasks,
         notes: state.notes,
@@ -606,6 +774,12 @@ export const useContinuumStore = create<ContinuumState & ContinuumActions>()(
         skills: state.skills,
         activeProjectId: state.activeProjectId,
         activeModelId: state.activeModelId,
+        aiRequestQueue: state.aiRequestQueue,
+        isThinking: state.isThinking,
+        aiStatus: state.aiStatus,
+        aiError: state.aiError,
+        portals: state.portals,
+        hasCompletedSetup: state.hasCompletedSetup,
       }),
     }
   )

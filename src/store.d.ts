@@ -1,0 +1,78 @@
+import { type ContinuumState, type Project, type Task, type IdealNote, type SuggestedAction, type Mutation, type AIModel, type Agent, type Skill, type Node, type Edge, type AIRuntime, type PromptTemplate } from './types';
+interface ContinuumActions {
+    addNode: (node: Node) => void;
+    updateNode: (id: string, updates: Partial<Node>) => void;
+    deleteNode: (id: string) => void;
+    addEdge: (edge: Edge) => void;
+    removeEdge: (id: string) => void;
+    migrateToGraph: () => void;
+    registerRuntime: (runtime: AIRuntime) => void;
+    updateRuntimeStatus: (id: string, status: AIRuntime['status']) => void;
+    updateRuntime: (id: string, updates: Partial<AIRuntime>) => void;
+    addPromptTemplate: (template: PromptTemplate) => void;
+    updateDownloadProgress: (modelId: string, progress: number) => void;
+    requestAI: (agentId: string, templateId: string, context: any, retries?: number) => Promise<void>;
+    downloadModel: (modelId: string) => Promise<void>;
+    initializeRuntimes: () => Promise<void>;
+    refreshPortals: () => Promise<void>;
+    generateBriefing: () => string;
+    openPortal: (repo: string, briefing: string) => Promise<void>;
+    ingestPortalResults: (portalId: string) => Promise<void>;
+    retryQueuedRequests: () => Promise<void>;
+    removeQueuedRequest: (id: string) => void;
+    updateNodePosition: (nodeId: string, x: number, y: number) => void;
+    updateViewport: (zoom: number, pan: {
+        x: number;
+        y: number;
+    }) => void;
+    addProject: (project: Project) => void;
+    updateProject: (id: string, updates: Partial<Project>) => void;
+    setActiveProject: (id: string | null) => void;
+    addTask: (task: Task) => void;
+    updateTask: (id: string, updates: Partial<Task>) => void;
+    deleteTask: (id: string) => void;
+    addNote: (note: IdealNote) => void;
+    updateNote: (id: string, updates: Partial<IdealNote>) => void;
+    deleteNote: (id: string) => void;
+    addSuggestedAction: (action: SuggestedAction) => void;
+    updateSuggestedAction: (id: string, updates: Partial<SuggestedAction>) => void;
+    snoozeAction: (id: string, durationMinutes?: number) => void;
+    archiveAction: (id: string) => void;
+    acceptAction: (id: string) => void;
+    deleteSuggestedAction: (id: string) => void;
+    resurfaceActions: () => void;
+    registerModel: (model: AIModel) => void;
+    updateModelStatus: (id: string, status: AIModel['status']) => void;
+    removeModel: (id: string) => void;
+    setActiveModel: (id: string | null) => void;
+    checkModelHealth: (id: string) => Promise<boolean>;
+    registerAgent: (agent: Agent) => void;
+    updateAgent: (id: string, updates: Partial<Agent>) => void;
+    registerSkill: (skill: Skill) => void;
+    externalRequest: (agentId: string, title: string, description: string, payload: any) => void;
+    scanFilesystem: (rootPath: string) => Promise<void>;
+    startBackgroundScan: (rootPath: string, intervalMs: number) => void;
+    stopBackgroundScan: () => void;
+    proposeMutation: (mutation: Omit<Mutation, 'id' | 'timestamp' | 'isOutOfScope'>) => void;
+    commitMutation: (id: string, force?: boolean) => void;
+    rejectMutation: (id: string) => void;
+    undo: () => void;
+    setLastSync: (timestamp: number) => void;
+    resetStore: () => void;
+    completeSetup: () => void;
+}
+export declare const useContinuumStore: import("zustand").UseBoundStore<Omit<import("zustand").StoreApi<ContinuumState & ContinuumActions>, "setState" | "persist"> & {
+    setState(partial: (ContinuumState & ContinuumActions) | Partial<ContinuumState & ContinuumActions> | ((state: ContinuumState & ContinuumActions) => (ContinuumState & ContinuumActions) | Partial<ContinuumState & ContinuumActions>), replace?: false | undefined): unknown;
+    setState(state: (ContinuumState & ContinuumActions) | ((state: ContinuumState & ContinuumActions) => ContinuumState & ContinuumActions), replace: true): unknown;
+    persist: {
+        setOptions: (options: Partial<import("zustand/middleware").PersistOptions<ContinuumState & ContinuumActions, unknown, unknown>>) => void;
+        clearStorage: () => void;
+        rehydrate: () => Promise<void> | void;
+        hasHydrated: () => boolean;
+        onHydrate: (fn: (state: ContinuumState & ContinuumActions) => void) => () => void;
+        onFinishHydration: (fn: (state: ContinuumState & ContinuumActions) => void) => () => void;
+        getOptions: () => Partial<import("zustand/middleware").PersistOptions<ContinuumState & ContinuumActions, unknown, unknown>>;
+    };
+}>;
+export {};
+//# sourceMappingURL=store.d.ts.map

@@ -4,11 +4,41 @@
 Continuum is a local-first project continuity system designed to help developers resume work effortlessly by unifying projects, tasks, notes, AI-assisted planning, external agents, and GitHub workflows into a single focused environment.
 
 ## Current Status
-- **Phase:** Phase 6 complete. Ready for integration and verification.
-- **Last completed step:** Task 6.5 Undo notification surface
-- **Current focus:** Phase 6 review and next phase planning
+- **Phase:** Phase 9 in progress.
+- **Last completed step:** Task 9.5 Implement Error/Offline recovery for AI requests
+- **Current focus:** Phase 9 completed. Moving to stabilization and testing.
 
 ## Completed Steps
+### Step 9.5 – Implement Error/Offline recovery for AI requests
+- **Description:** Enhanced `requestAI` to gracefully queue requests if the AI runtime is offline or fails. Implemented an `aiRequestQueue` that survives app restarts.
+- **Files updated:** `src/types.ts`, `src/store.ts`, `src/store.test.ts`, `package.json`
+- **Decisions made:** Added `vitest` as a safety harness to unit test the Zustand store offline. Added an auto-retry mechanism to `checkModelHealth` that flushes the `aiRequestQueue` back through `requestAI` when a local runtime goes from offline to online.
+
+### Step 9.4 – Connect `requestAI` to live GPT4All endpoint
+- **Description:** Wired the Quick Capture UI to trigger `requestAI`, passing the note and active project context to the configured agent (`jules`) for automated task generation.
+- **Files updated:** `src/App.tsx`
+- **Decisions made:** Automatic task extraction happens asynchronously when a note is captured, demonstrating seamless "live intelligence" without blocking the UI.
+
+### Step 9.3 – Add `isThinking` state and UI feedback
+- **Description:** Introduced an `isThinking` boolean to the Zustand store and a pulsing `BrainCircuit` indicator in the top app bar of the UI.
+- **Files updated:** `src/App.tsx`, `src/store.ts`
+- **Decisions made:** Placed the indicator in the top right header to ensure global visibility across all tabs whenever the agent is processing.
+
+### Step 9.1 & 9.2 – Agent Personas & Runtime Initialization
+- **Description:** Defined the "Jules" (Strategic Architect) persona mapped to the `task-generator` template and implemented boot-time runtime health checks (`initializeRuntimes`).
+- **Files updated:** `src/store.ts`, `docs/ARCH_LIVE_INTELLIGENCE.md`
+- **Decisions made:** Unified the discovery process to ping the local network IP on startup to toggle offline/online status.
+
+### Step 8.4 – Create Auto-Save debouncer
+- **Description:** Wrapped `capacitorStorage.setItem` in a 1-second `setTimeout` debouncer.
+- **Files updated:** `src/store.ts`
+- **Decisions made:** Prevent aggressive blocking I/O calls to the Android filesystem when rapid state mutations occur (e.g., typing, dragging nodes).
+
+### Step 7.1 to 7.6 – Native Mobile UI Overhaul (Material Design 3)
+- **Description:** Revamped the entire UI to match Material Design 3 guidelines (tonal surfaces, rounded corners). Integrated `@capacitor/haptics` for tactile feedback and `framer-motion` for spring-based component transitions (drawers, toasts).
+- **Files updated:** `src/App.tsx`, `package.json`
+- **Decisions made:** Prioritized a bottom navigation bar and slide-up modal drawers to better suit tall modern devices (Pixel 10 Pro).
+
 ### Step 6.5 – Undo notification surface
 - **Description:** Implemented a fixed-bottom `Undo` toast that appears after any mutation is committed. Added a `Pending Approvals` section to the dashboard to allow users to review and commit AI-proposed changes.
 - **Files created:** `src/App.tsx` (Updated with Undo and Approval UI)
