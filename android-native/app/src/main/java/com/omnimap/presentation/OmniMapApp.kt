@@ -2,7 +2,6 @@ package com.omnimap.presentation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
@@ -22,9 +21,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.omnimap.presentation.dashboard.DashboardScreen
-import com.omnimap.presentation.feed.FeedScreen
+import com.omnimap.presentation.graph.GraphScreen
 import com.omnimap.presentation.graph.GraphViewModel
-import com.omnimap.presentation.graph.ui.OmniMapCanvas
 import com.omnimap.presentation.navigation.Screen
 
 @Composable
@@ -82,27 +80,6 @@ fun OmniMapApp(graphViewModel: GraphViewModel) {
                         indicatorColor = Color(0xFF49454F)
                     )
                 )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Chat, contentDescription = "Feed") },
-                    label = { Text("Feed") },
-                    selected = currentDestination?.hierarchy?.any { it.route == Screen.Feed.route } == true,
-                    onClick = {
-                        navController.navigate(Screen.Feed.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = Color.White,
-                        unselectedIconColor = Color.Gray,
-                        selectedTextColor = Color.White,
-                        unselectedTextColor = Color.Gray,
-                        indicatorColor = Color(0xFF49454F)
-                    )
-                )
             }
         }
     ) { innerPadding ->
@@ -112,8 +89,7 @@ fun OmniMapApp(graphViewModel: GraphViewModel) {
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Dashboard.route) { DashboardScreen() }
-            composable(Screen.Graph.route) { OmniMapCanvas(viewModel = graphViewModel) }
-            composable(Screen.Feed.route) { FeedScreen() }
+            composable(Screen.Graph.route) { GraphScreen(viewModel = graphViewModel) }
         }
     }
 }

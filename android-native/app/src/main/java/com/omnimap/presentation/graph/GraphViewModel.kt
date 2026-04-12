@@ -48,8 +48,54 @@ class GraphViewModel(
                     is GraphIntent.OnEdgeCreated -> createEdge(intent)
                     is GraphIntent.OnNodeDeleted -> deleteNode(intent.id)
                     is GraphIntent.OnEdgeDeleted -> deleteEdge(intent.id)
+                    is GraphIntent.OnNodeSelected -> selectNode(intent.id)
+                    is GraphIntent.OnSubmitPrompt -> submitPrompt(intent.prompt)
                 }
             }
+        }
+    }
+
+    private fun selectNode(id: String?) {
+        _state.update { it.copy(selectedNodeId = id) }
+        if (id != null) {
+            hapticEngine.performLightTick()
+        }
+    }
+
+    private fun submitPrompt(prompt: String) {
+        val userMsg = ChatMessage(text = prompt, isFromUser = true)
+        _state.update {
+            it.copy(
+                chatHistory = it.chatHistory + userMsg,
+                isAiThinking = true
+            )
+        }
+
+        viewModelScope.launch {
+            val currentState = _state.value
+            val contextPrefix = if (currentState.selectedNodeId != null) {
+                val selectedNode = currentState.nodes[currentState.selectedNodeId]
+                "Context: Expanding on node '${selectedNode?.title}'. "
+            } else {
+                "Context: Global graph instruction. "
+            }
+
+            val fullPrompt = "$contextPrefix User prompt: $prompt"
+            val result = aiRepository.generateNodeSuggestion(fullPrompt)
+            
+            val aiMsg = ChatMessage(
+                text = result.getOrElse { "Error: ${it.message}" },
+                isFromUser = false
+            )
+
+            // Here we would parse JSON to mutate graph. For Phase 2 foundation, we just add the chat message.
+            _state.update {
+                it.copy(
+                    chatHistory = it.chatHistory + aiMsg,
+                    isAiThinking = false
+                )
+            }
+            hapticEngine.performHeavySnap()
         }
     }
 

@@ -10,4 +10,6 @@ sealed class GraphIntent {
     data class OnEdgeCreated(val sourceId: String, val targetId: String, val type: EdgeType) : GraphIntent()
     data class OnNodeDeleted(val id: String) : GraphIntent()
     data class OnEdgeDeleted(val id: String) : GraphIntent()
+    data class OnNodeSelected(val id: String?) : GraphIntent()
+    data class OnSubmitPrompt(val prompt: String) : GraphIntent()
 }

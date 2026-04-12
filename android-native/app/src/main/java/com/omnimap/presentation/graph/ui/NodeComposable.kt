@@ -46,7 +46,8 @@ fun NodeComposable(
             }
             .widthIn(min = 140.dp, max = 280.dp),
         shape = RoundedCornerShape(28.dp), // MD3 Large container radius from ARCH_UI_OVERHAUL.md
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp),
+        border = androidx.compose.foundation.BorderStroke(2.dp, borderColor),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF1C1B1F), // MD3 Dark surface from ARCH_UI_OVERHAUL.md
             contentColor = Color.White
@@ -60,6 +61,15 @@ fun NodeComposable(
             )
             if (node.description.isNotBlank()) {
                 Text(
+                    text = node.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.LightGray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+        }
+    }
+}      Text(
                     text = node.description,
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.LightGray,
