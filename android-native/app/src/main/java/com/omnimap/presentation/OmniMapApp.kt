@@ -21,12 +21,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.omnimap.presentation.dashboard.DashboardScreen
+import com.omnimap.presentation.dashboard.DashboardViewModel
+import com.omnimap.presentation.graph.GraphIntent
 import com.omnimap.presentation.graph.GraphScreen
 import com.omnimap.presentation.graph.GraphViewModel
 import com.omnimap.presentation.navigation.Screen
 
 @Composable
-fun OmniMapApp(graphViewModel: GraphViewModel) {
+fun OmniMapApp(graphViewModel: GraphViewModel, dashboardViewModel: DashboardViewModel) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -88,7 +90,16 @@ fun OmniMapApp(graphViewModel: GraphViewModel) {
             startDestination = Screen.Graph.route,
             modifier = Modifier.padding(innerPadding)
         ) {
-            composable(Screen.Dashboard.route) { DashboardScreen() }
+            composable(Screen.Dashboard.route) { 
+                DashboardScreen(
+                    viewModel = dashboardViewModel,
+                    onNodeClick = { nodeId ->
+                        // Navigate to graph and select the node
+                        graphViewModel.processIntent(GraphIntent.OnNodeSelected(nodeId))
+                        navController.navigate(Screen.Graph.route)
+                    }
+                ) 
+            }
             composable(Screen.Graph.route) { GraphScreen(viewModel = graphViewModel) }
         }
     }

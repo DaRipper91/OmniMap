@@ -20,6 +20,10 @@ class OmniMapRepositoryImpl(
         return nodeDao.getNodeById(id)
     }
 
+    override fun searchNodes(query: String): Flow<List<Node>> {
+        return nodeDao.searchNodes(query)
+    }
+
     override suspend fun insertNode(node: Node) {
         nodeDao.insertNode(node)
     }

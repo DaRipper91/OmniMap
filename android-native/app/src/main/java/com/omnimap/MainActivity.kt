@@ -6,12 +6,14 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
 import com.omnimap.presentation.OmniMapApp
+import com.omnimap.presentation.dashboard.DashboardViewModel
 import com.omnimap.presentation.graph.GraphViewModel
 
 class MainActivity : ComponentActivity() {
     // Note: In a production setup this would be managed by Hilt or Koin,
     // but we use a lateinit placeholder for the foundation phase.
     private lateinit var graphViewModel: GraphViewModel
+    private lateinit var dashboardViewModel: DashboardViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,10 +22,13 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         
-        // Note: initialize the view model graphViewModel here via DI or factory.
+        // Note: initialize the view models here via DI or factory.
 
         setContent {
-            OmniMapApp(graphViewModel = graphViewModel)
+            OmniMapApp(
+                graphViewModel = graphViewModel,
+                dashboardViewModel = dashboardViewModel
+            )
         }
     }
 }

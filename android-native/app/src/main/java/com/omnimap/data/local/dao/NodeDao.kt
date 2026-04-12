@@ -17,6 +17,9 @@ interface NodeDao {
     @Query("SELECT * FROM nodes WHERE id = :id")
     fun getNodeById(id: String): Flow<Node?>
 
+    @Query("SELECT * FROM nodes WHERE title LIKE '%' || :searchQuery || '%' OR description LIKE '%' || :searchQuery || '%'")
+    fun searchNodes(searchQuery: String): Flow<List<Node>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNode(node: Node)
 

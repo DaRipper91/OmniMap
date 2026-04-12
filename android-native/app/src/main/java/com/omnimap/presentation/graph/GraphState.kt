@@ -11,5 +11,6 @@ data class GraphState(
     val error: String? = null,
     val selectedNodeId: String? = null,
     val isAiThinking: Boolean = false,
-    val chatHistory: List<ChatMessage> = emptyList()
+    val chatHistory: List<ChatMessage> = emptyList(),
+    val editingNode: Node? = null
 )

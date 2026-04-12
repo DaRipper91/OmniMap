@@ -50,9 +50,27 @@ class GraphViewModel(
                     is GraphIntent.OnEdgeDeleted -> deleteEdge(intent.id)
                     is GraphIntent.OnNodeSelected -> selectNode(intent.id)
                     is GraphIntent.OnSubmitPrompt -> submitPrompt(intent.prompt)
+                    is GraphIntent.OnEditNodeRequest -> editNodeRequest(intent.id)
+                    is GraphIntent.OnNodeUpdated -> updateNodeData(intent.id, intent.newTitle, intent.newDescription)
                 }
             }
         }
+    }
+
+    private fun editNodeRequest(id: String?) {
+        if (id == null) {
+            _state.update { it.copy(editingNode = null) }
+        } else {
+            val node = _state.value.nodes[id]
+            _state.update { it.copy(editingNode = node) }
+        }
+    }
+
+    private suspend fun updateNodeData(id: String, title: String, description: String) {
+        val node = _state.value.nodes[id] ?: return
+        val updatedNode = node.copy(title = title, description = description, updatedAt = System.currentTimeMillis())
+        repository.updateNode(updatedNode)
+        _state.update { it.copy(editingNode = null) } // Close dialog
     }
 
     private fun selectNode(id: String?) {

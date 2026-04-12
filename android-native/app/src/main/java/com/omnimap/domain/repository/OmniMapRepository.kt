@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 interface OmniMapRepository {
     fun getAllNodes(): Flow<List<Node>>
     fun getNodeById(id: String): Flow<Node?>
+    fun searchNodes(query: String): Flow<List<Node>>
     suspend fun insertNode(node: Node)
     suspend fun updateNode(node: Node)
     suspend fun deleteNode(node: Node)
