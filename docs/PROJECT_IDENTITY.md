@@ -5,7 +5,6 @@ OmniMap is a high-performance, native execution control plane for the human mind
 
 ## 📱 Hardware Context
 - **Primary Flagship:** Google Pixel 10 Pro (Target for 120Hz smooth animations and tactile polish).
-- **Development Rig:** Google Pixel 9 (Used for testing and junior dev-level tasks).
 - **Anchor:** CachyOS Desktop (x86_64) for high-bandwidth I/O and local LLM orchestration.
 
 ## 💎 Core Values

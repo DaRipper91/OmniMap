@@ -28,7 +28,7 @@ Phase 1 of the OmniMap project has been successfully completed. We have establis
 ---
 
 ## 🔄 Cross-Device Development Guide (How to Continue)
-OmniMap is designed to be built across multiple environments (e.g., Linux Workstation, Pixel 9 via Termux). To continue development seamlessly on another device, follow this protocol:
+OmniMap is designed to be built across multiple environments (e.g., Linux Workstation, Android via Termux). To continue development seamlessly on another device, follow this protocol:
 
 ### 1. Synchronize the Repository
 First, clone or pull the latest changes from the synchronized Git remotes:
@@ -39,7 +39,7 @@ git clone https://github.com/DaRipper91/OmniMap.git
 ```
 
 ### 2. Unified `.gemini` Configuration Strategy
-To maintain the AI's context, memory, and custom agents across your CachyOS desktop and Pixel 9 Termux environments, you must sync your `.gemini` directory.
+To maintain the AI's context, memory, and custom agents across your CachyOS desktop and Android Termux environments, you must sync your `.gemini` directory.
 - **Symlink or Git-Sync:** Keep a dedicated private repository for your `~/.gemini` folder.
 - **On the new device:** Clone your config repo to `~/.gemini` before starting the agent. This ensures the AI instantly knows the `PROJECT_IDENTITY`, the `omnimap-architect` system instructions, and the current operational protocols without having to be re-taught.
 
@@ -51,4 +51,4 @@ The app relies on local inference. On the new device (or network):
 
 ### 4. Build Environment
 - **Desktop:** Open the `android-native/` folder in Android Studio Ladybug (or newer) to continue Compose UI development.
-- **Pixel 9 (Termux/Shizuku):** Use the pre-existing build scripts (e.g., `compile-apk-in-arch.sh` modified for local build) to compile and install the APK natively on the device via ADB.
+- **Android Device (Termux/Shizuku):** Use the pre-existing build scripts (e.g., `compile-apk-in-arch.sh` modified for local build) to compile and install the APK natively on the device via ADB.
