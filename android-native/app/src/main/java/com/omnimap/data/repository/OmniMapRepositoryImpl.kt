@@ -24,6 +24,14 @@ class OmniMapRepositoryImpl(
         return nodeDao.searchNodes(query)
     }
 
+    override suspend fun getAllNodesSync(): List<Node> {
+        return nodeDao.getAllNodesSync()
+    }
+
+    override suspend fun insertNodes(nodes: List<Node>) {
+        nodeDao.insertNodes(nodes)
+    }
+
     override suspend fun insertNode(node: Node) {
         nodeDao.insertNode(node)
     }
@@ -42,6 +50,14 @@ class OmniMapRepositoryImpl(
 
     override fun getEdgesForNode(nodeId: String): Flow<List<Edge>> {
         return edgeDao.getEdgesForNode(nodeId)
+    }
+
+    override suspend fun getAllEdgesSync(): List<Edge> {
+        return edgeDao.getAllEdgesSync()
+    }
+
+    override suspend fun insertEdges(edges: List<Edge>) {
+        edgeDao.insertEdges(edges)
     }
 
     override suspend fun insertEdge(edge: Edge) {

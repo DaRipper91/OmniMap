@@ -20,6 +20,9 @@ interface EdgeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEdge(edge: Edge)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEdges(edges: List<Edge>)
+
     @Update
     suspend fun updateEdge(edge: Edge)
 

@@ -1,5 +1,8 @@
 package com.omnimap.presentation.dashboard
 
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,13 +11,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -26,6 +33,36 @@ fun DashboardScreen(
 ) {
     val query by viewModel.searchQuery.collectAsState()
     val results by viewModel.searchResults.collectAsState()
+    val exportJson by viewModel.exportJsonResult.collectAsState()
+    val context = LocalContext.current
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null && exportJson != null) {
+            context.contentResolver.openOutputStream(uri)?.use { stream ->
+                stream.write(exportJson!!.toByteArray())
+            }
+        }
+        viewModel.clearExportResult()
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            context.contentResolver.openInputStream(uri)?.use { stream ->
+                val jsonText = stream.bufferedReader().use { it.readText() }
+                viewModel.importGraph(jsonText)
+            }
+        }
+    }
+
+    LaunchedEffect(exportJson) {
+        if (exportJson != null) {
+            exportLauncher.launch("omnimap_backup.json")
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -33,13 +70,27 @@ fun DashboardScreen(
             .background(Color(0xFF141218)) // MD3 Background Dark
             .padding(16.dp)
     ) {
-        Text(
-            text = "OmniMap Dashboard",
-            color = Color.White,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp, top = 32.dp)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp, top = 32.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "OmniMap",
+                color = Color.White,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Row {
+                IconButton(onClick = { importLauncher.launch(arrayOf("application/json", "*/*")) }) {
+                    Icon(Icons.Filled.Upload, contentDescription = "Import JSON", tint = Color(0xFFD0BCFF))
+                }
+                IconButton(onClick = { viewModel.exportGraph() }) {
+                    Icon(Icons.Filled.Download, contentDescription = "Export JSON", tint = Color(0xFFD0BCFF))
+                }
+            }
+        }
 
         // Suggestion 1: Global Search Bar
         SearchBar(
