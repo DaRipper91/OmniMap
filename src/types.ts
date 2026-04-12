@@ -155,24 +155,6 @@ export interface Mutation {
   isUnauthorized?: boolean; // Does the agent have the necessary permissions?
 }
 
-export interface QueuedAIRequest {
-  id: string;
-  agentId: string;
-  templateId: string;
-  context: any;
-  status: 'pending' | 'failed';
-  timestamp: number;
-  retryCount: number;
-}
-
-export interface NexiumPortal {
-  id: string;
-  description: string;
-  repo: string;
-  lastActive: string;
-  status: string;
-}
-
 export interface ContinuumState {
   nodes: Node[];
   edges: Edge[];
@@ -193,10 +175,4 @@ export interface ContinuumState {
   activeModelId: string | null;
   lastSyncTimestamp: number;
   isScanning: boolean;
-  isThinking: boolean;
-  aiStatus: 'idle' | 'thinking' | 'retrying' | 'error';
-  aiError: string | null;
-  hasCompletedSetup: boolean;
-  portals: NexiumPortal[];
-  aiRequestQueue: QueuedAIRequest[];
 }

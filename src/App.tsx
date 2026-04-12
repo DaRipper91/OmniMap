@@ -1,39 +1,10 @@
 import React from 'react';
 import { useContinuumStore } from './store';
 import { getChildren } from './graph-utils';
-import { nativeFS, getPlatform } from './native-bridge-impl';
-import { MindMap } from './components/MindMap';
-import { SetupWizard } from './components/SetupWizard';
-import { SettingsDrawer } from './components/SettingsDrawer';
-import { GlobalSearch } from './components/GlobalSearch';
-import { KanbanBoard } from './components/KanbanBoard';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import { 
-  LayoutDashboard, 
-  Share2, 
-  BrainCircuit, 
-  Search, 
-  Settings, 
-  Menu, 
-  Plus, 
-  Undo2,
-  CheckCircle2,
-  Clock,
-  Archive,
-  ArrowRightLeft,
-  Server,
-  Activity,
-  AlertCircle,
-  Trash2,
-  KanbanSquare,
-  Cloud,
-  List
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 
-import { NexiumPortalMonitor } from './components/NexiumPortalMonitor';
+import { nativeFS, getPlatform } from './native-bridge-impl';
+
+import { MindMap } from './components/MindMap';
 
 function App() {
   const nodes = useContinuumStore((state) => state.nodes);
@@ -43,76 +14,60 @@ function App() {
   const downloadProgress = useContinuumStore((state) => state.downloadProgress);
   const requestAI = useContinuumStore((state) => state.requestAI);
   const downloadModel = useContinuumStore((state) => state.downloadModel);
-  const checkModelHealth = useContinuumStore((state) => state.checkModelHealth);
   const suggestedActions = useContinuumStore((state) => state.suggestedActions);
   const undoHistory = useContinuumStore((state) => state.undoHistory);
   const activeProjectId = useContinuumStore((state) => state.activeProjectId);
   const setActiveProject = useContinuumStore((state) => state.setActiveProject);
   const proposeMutation = useContinuumStore((state) => state.proposeMutation);
   const commitMutation = useContinuumStore((state) => state.commitMutation);
-  const addProject = useContinuumStore((state) => state.addProject);
   const addNote = useContinuumStore((state) => state.addNote);
-  const deleteTask = useContinuumStore((state) => state.deleteTask);
-  const deleteNote = useContinuumStore((state) => state.deleteNote);
   const acceptAction = useContinuumStore((state) => state.acceptAction);
   const snoozeAction = useContinuumStore((state) => state.snoozeAction);
   const archiveAction = useContinuumStore((state) => state.archiveAction);
   const undo = useContinuumStore((state) => state.undo);
   const pendingMutations = useContinuumStore((state) => state.pendingMutations);
-  const isThinking = useContinuumStore((state) => state.isThinking);
-  const aiStatus = useContinuumStore((state) => state.aiStatus);
-  const aiError = useContinuumStore((state) => state.aiError);
-  const hasCompletedSetup = useContinuumStore((state) => state.hasCompletedSetup);
-  const portals = useContinuumStore((state) => state.portals);
-  const allProjects = useContinuumStore((state) => state.projects);
-  const openPortal = useContinuumStore((state) => state.openPortal);
-  const generateBriefing = useContinuumStore((state) => state.generateBriefing);
 
-  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'map' | 'models'>('dashboard');
-  const [viewMode, setViewMode] = React.useState<'list' | 'kanban'>('list');
-  const [isProjectDrawerOpen, setIsProjectDrawerOpen] = React.useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'dashboard' | 'models'>('dashboard');
+  const [viewMode, setViewMode] = React.useState<'list' | 'map'>('list');
   const [platform] = React.useState(getPlatform());
-
-  // Trigger haptic feedback
-  const triggerHaptic = (style: ImpactStyle = ImpactStyle.Light) => {
-    if (platform === 'android') {
-      Haptics.impact({ style });
-    }
-  };
-
-  const triggerSuccessHaptic = () => {
-    if (platform === 'android') {
-      Haptics.notification({ type: NotificationType.Success });
-    }
-  };
 
   React.useEffect(() => {
     if (platform === 'android') {
-      nativeFS.requestPermissions();
+      nativeFS.requestPermissions().then(granted => {
+        console.log('Storage permissions:', granted ? 'GRANTED' : 'DENIED');
+      });
     }
   }, [platform]);
 
-  // Materialized Views
+  const handleSyncVault = async () => {
+    if (!activeProject) return;
+    console.log('Syncing vault to native storage...');
+    // In a real implementation, loop nodes and call nativeFS.writeNode
+  };
+
+  // Materialized Views from Graph
   const projects = nodes.filter(n => n.type === 'PROJECT');
   const activeProject = nodes.find(p => p.id === activeProjectId && p.type === 'PROJECT');
+  
+  // Resolve tasks from edges if project is active, otherwise show all task nodes
   const filteredTasks = activeProjectId 
     ? getChildren({ nodes, edges } as any, activeProjectId).filter(n => n.type === 'TASK')
     : nodes.filter(n => n.type === 'TASK');
+
+  // Resolve notes from graph
   const filteredNotes = activeProjectId
     ? getChildren({ nodes, edges } as any, activeProjectId).filter(n => n.type === 'IDEA')
     : nodes.filter(n => n.type === 'IDEA');
+
+  // Filter suggested actions
   const filteredActions = activeProjectId
     ? suggestedActions.filter(a => a.projectId === activeProjectId && a.status === 'active')
     : suggestedActions.filter(a => a.status === 'active');
 
   const handleToggleStatus = (task: any) => {
-    triggerHaptic(ImpactStyle.Medium);
     const currentStatus = task.data?.status || 'todo';
     const nextStatus = currentStatus === 'todo' ? 'in_progress' : (currentStatus === 'in_progress' ? 'done' : 'todo');
-    if (nextStatus === 'done') triggerSuccessHaptic();
-
+    
     proposeMutation({
       type: 'UPDATE',
       entity: 'TASK',
@@ -120,21 +75,13 @@ function App() {
     });
   };
 
-  const handleOpenPortal = async () => {
-    triggerHaptic();
-    const briefing = generateBriefing();
-    const activeProjectData = allProjects.find(p => p.id === activeProjectId);
-    const repo = activeProjectData?.path || 'DaRipper91/contiinuum';
-    await openPortal(repo, briefing);
-  };
-
-  const handleQuickCapture = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleQuickCapture = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const content = formData.get('note-content') as string;
+    
     if (!content.trim()) return;
 
-    triggerSuccessHaptic();
     addNote({
       id: Math.random().toString(36).substring(2, 9),
       projectId: activeProjectId || undefined,
@@ -143,569 +90,909 @@ function App() {
       updatedAt: Date.now(),
       tags: ['quick-capture'],
     });
+
     e.currentTarget.reset();
-    
-    // Simulate AI parsing context from quick capture
-    if (!isThinking) {
-      await requestAI('jules', 'task-generator', { note: content, projectId: activeProjectId });
-    }
   };
 
   return (
-    <div className="app-container native-shell">
-      {!hasCompletedSetup && <SetupWizard />}
-      <SettingsDrawer isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-      
-      {/* Immersive Top Header */}
-      <header className="native-app-bar">
-        <button className="icon-btn" onClick={() => { setIsProjectDrawerOpen(true); triggerHaptic(); }}>
-          <Menu size={24} />
-        </button>
-        <div className="app-bar-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {activeProject ? activeProject.title : 'Continuum'}
-          <AnimatePresence>
-            {isThinking && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: [1, 1.2, 1] }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-                className="thinking-indicator"
-              >
-                <BrainCircuit size={16} color="var(--primary)" />
-              </motion.div>
+    <div className="app-container">
+      <aside className="sidebar">
+        <header className="sidebar-header">
+          <div className="title-row">
+            <h1>Continuum</h1>
+            <span className={`platform-badge platform-${platform}`}>{platform}</span>
+          </div>
+          <div className="status-row">
+            <span className="status-dot"></span>
+            {platform === 'android' && (
+              <button onClick={handleSyncVault} className="btn-sync-mini">Sync Vault</button>
             )}
-          </AnimatePresence>
-        </div>
-        <div className="app-bar-actions">
-          <button className="icon-btn" onClick={() => triggerHaptic()}><Search size={22} /></button>
-          <button className="icon-btn" onClick={() => { setIsSettingsOpen(true); triggerHaptic(); }}><Settings size={22} /></button>
-        </div>
-      </header>
+          </div>
+        </header>
+        
+        <nav className="main-nav">
+          <button 
+            className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            📊 Dashboard
+          </button>
+          <button 
+            className={`nav-item ${activeTab === 'models' ? 'active' : ''}`}
+            onClick={() => setActiveTab('models')}
+          >
+            🧠 AI Models
+          </button>
+        </nav>
 
-      <main className="native-content">
-        <AnimatePresence mode="wait">
-          {activeTab === 'dashboard' && (
-            <motion.section 
-              key="dashboard"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="dashboard-view"
+        <nav className="project-list">
+          <div className="section-label">Projects</div>
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              className={`project-item ${activeProjectId === project.id ? 'active' : ''}`}
+              onClick={() => { setActiveProject(project.id); setActiveTab('dashboard'); }}
             >
-              {/* Approvals Section (MD3 Card) */}
-              {pendingMutations.length > 0 && (
-                <div className="native-card primary-tonal">
-                  <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <h3 style={{ margin: 0 }}>Approvals Required</h3>
-                    <span className="badge" style={{ background: 'var(--primary)', color: '#000', padding: '2px 8px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 'bold' }}>{pendingMutations.length}</span>
+              <span className="project-icon">#</span>
+              <span className="project-name">{project.title}</span>
+            </button>
+          ))}
+          <button 
+            className={`project-item ${activeProjectId === null ? 'active' : ''}`}
+            onClick={() => { setActiveProject(null); setActiveTab('dashboard'); }}
+          >
+            <span className="project-icon">🌍</span>
+            <span className="project-name">Global Context</span>
+          </button>
+        </nav>
+
+        {filteredActions.length > 0 && (
+          <div className="suggested-actions-sidebar">
+            <div className="section-label">AI Suggestions</div>
+            <div className="actions-mini-list">
+              {filteredActions.map(action => (
+                <div key={action.id} className="action-mini-card">
+                  <div className="action-mini-title">{action.title}</div>
+                  <div className="action-mini-btns">
+                    <button onClick={() => acceptAction(action.id)} className="btn-mini btn-accept">✓</button>
+                    <button onClick={() => snoozeAction(action.id, 60)} className="btn-mini">🕒</button>
+                    <button onClick={() => archiveAction(action.id)} className="btn-mini">✕</button>
                   </div>
-                  <div className="mutation-stack" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {pendingMutations.map(m => (
-                      <div key={m.id} className="mutation-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '8px' }}>
-                        <span style={{ fontSize: '0.9rem' }}>{m.type} {m.entity}</span>
-                        <button className="chip-btn" style={{ background: 'var(--primary-container)', color: 'var(--primary)', border: 'none', padding: '6px 12px', borderRadius: '16px', fontWeight: 600 }} onClick={() => { commitMutation(m.id); triggerHaptic(); }}>Approve</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </aside>
+
+      <main className="main-content">
+        <header className="content-header">
+          <div className="breadcrumb">
+            {activeProject ? (
+              <>
+                <span className="folder">projects</span>
+                <span className="separator">/</span>
+                <span className="current">{activeProject.title}</span>
+              </>
+            ) : (
+              <span className="current">{activeTab === 'models' ? 'AI Management' : 'Global View'}</span>
+            )}
+          </div>
+          <div className="header-actions">
+            <div className="view-toggle">
+              <button 
+                className={`btn-toggle ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setViewMode('list')}
+              >
+                List
+              </button>
+              <button 
+                className={`btn-toggle ${viewMode === 'map' ? 'active' : ''}`}
+                onClick={() => setViewMode('map')}
+              >
+                Map
+              </button>
+            </div>
+            <button className="btn-icon">🔍</button>
+            <button className="btn-icon">⚙️</button>
+          </div>
+        </header>
+
+        <section className="dashboard" style={{ padding: viewMode === 'map' ? '0' : '40px' }}>
+          {activeTab === 'dashboard' ? (
+            viewMode === 'map' ? (
+              <MindMap />
+            ) : (
+              <>
+                <div className="dashboard-header">
+                {activeProject ? (
+                  <div className="project-detail">
+                    <h2>{activeProject.title}</h2>
+                    <p className="description">{activeProject.description}</p>
+                    <div className="metadata">
+                      <span className="path">{activeProject.data?.path}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="global-header">
+                    <h2>All Tasks</h2>
+                    <p className="description">Unified view across all projects and personal items.</p>
+                  </div>
+                )}
+              </div>
+
+              {pendingMutations.length > 0 && (
+                <div className="pending-mutations-section">
+                  <div className="section-header">
+                    <h3>Approvals Required</h3>
+                    <span className="count">{pendingMutations.length}</span>
+                  </div>
+                  <div className="mutation-list">
+                    {pendingMutations.map(mutation => (
+                      <div key={mutation.id} className="mutation-card">
+                        <div className="mutation-info">
+                          <strong>{mutation.type} {mutation.entity}</strong>
+                          <span>{JSON.stringify(mutation.payload).substring(0, 50)}...</span>
+                        </div>
+                        <button 
+                          onClick={() => commitMutation(mutation.id)}
+                          className="btn-primary"
+                        >
+                          Approve
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Quick Capture (MD3 Input) */}
-              <div className="capture-surface">
-                <form onSubmit={handleQuickCapture} style={{ display: 'flex', width: '100%' }}>
-                  <textarea name="note-content" placeholder="Capture a thought..." rows={1} />
-                  <button type="submit" className="fab-mini"><Plus size={20} /></button>
+              <div className="quick-capture-section">
+                <form onSubmit={handleQuickCapture} className="quick-capture-form">
+                  <textarea 
+                    name="note-content"
+                    placeholder="What's on your mind? Capture it here..."
+                    className="capture-input"
+                  />
+                  <div className="form-actions">
+                    <span className="hint">Press Cmd+Enter to save</span>
+                    <button type="submit" className="btn-primary">Save Note</button>
+                  </div>
                 </form>
               </div>
 
-              {/* AI Status Message */}
-              {(isThinking || aiError) && (
-                <div className={`ai-status-message ${aiStatus}`}>
-                  {aiStatus === 'thinking' && <motion.div animate={{ rotate: 360 }} transition={{ duration: 2, repeat: Infinity, ease: "linear" }} style={{ display: 'inline-block', marginRight: '8px' }}>✨</motion.div>}
-                  {aiStatus === 'retrying' && <span style={{ marginRight: '8px' }}>⏳</span>}
-                  {aiStatus === 'error' && <span style={{ marginRight: '8px' }}>⚠️</span>}
-                  {aiError || (aiStatus === 'thinking' ? 'Jules is thinking...' : 'Opening Portal...')}
-                </div>
-              )}
-
-              {/* Task Section */}
-              <div className="native-section">
-                <div className="section-title" style={{ marginBottom: '16px', fontWeight: 'bold', color: 'var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>Tasks <span style={{ opacity: 0.6, fontSize: '0.9em' }}>{filteredTasks.length}</span></span>
-                  <button 
-                    onClick={handleOpenPortal}
-                    disabled={isThinking}
-                    style={{ 
-                      background: 'var(--primary-container)', 
-                      color: 'var(--primary)', 
-                      border: 'none', 
-                      borderRadius: '12px', 
-                      padding: '6px 12px', 
-                      fontSize: '0.8rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    <Cloud size={14} /> Open Portal
-                  </button>
-                </div>
-                
-                {filteredTasks.length === 0 ? (
-                  <div className="empty-state">
-                    <CheckCircle2 size={40} opacity={0.3} />
-                    <p>No tasks here. Use the quick capture above to let AI generate some!</p>
-                  </div>
-                ) : (
-                  <div className="native-task-list">
-                    {filteredTasks.map(task => (
-                      <motion.div 
-                        key={task.id} 
-                        whileTap={{ scale: 0.98 }}
-                        className={`native-task-card status-${task.data?.status || 'todo'}`}
-                        onClick={() => handleToggleStatus(task)}
+              <div className="dashboard-grid">
+                <div className="task-section">
+                  <div className="section-header">
+                    <h3>Tasks</h3>
+                    <div className="header-btns">
+                      <button 
+                        className="btn-ai-action"
+                        onClick={() => requestAI('jules', 'task-generator', { projectId: activeProjectId })}
                       >
-                        <div className="task-indicator"></div>
-                        <div className="task-content" style={{ flex: 1 }}>
-                          <h4 style={{ margin: '0 0 4px 0' }}>{task.title}</h4>
-                          <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.7 }}>{task.description}</p>
-                        </div>
-                        <ArrowRightLeft size={16} className="task-icon" style={{ opacity: 0.5 }} />
-                      </motion.div>
-                    ))}
+                        ✨ Ask AI
+                      </button>
+                      <span className="count">{filteredTasks.length}</span>
+                    </div>
                   </div>
-                )}
-              </div>
-
-              {/* Notes Feed */}
-              <div className="native-section" style={{ marginTop: '24px' }}>
-                <div className="section-title" style={{ marginBottom: '16px', fontWeight: 'bold', color: 'var(--primary)' }}>Recent Notes</div>
-                {filteredNotes.length === 0 ? (
-                  <div className="empty-state">
-                    <p>Your notes will appear here.</p>
-                  </div>
-                ) : (
-                  <div className="native-note-stack" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {filteredNotes.map(note => (
-                      <div key={note.id} className="native-note-card" style={{ background: 'var(--surface-variant)', padding: '16px', borderRadius: 'var(--radius-md)' }}>
-                        {note.data?.content || note.description}
+                  <div className="task-list-container">
+                    {filteredTasks.length > 0 ? (
+                      <div className="task-grid">
+                        {filteredTasks.map((task) => {
+                          const status = task.data?.status || 'todo';
+                          return (
+                            <div key={task.id} className={`task-card status-${status}`}>
+                              <div className="task-body">
+                                <h3>{task.title}</h3>
+                                <p>{task.description}</p>
+                                <div className="task-footer">
+                                  <span className={`status-badge badge-${status}`}>
+                                    {status.replace('_', ' ')}
+                                  </span>
+                                  <button 
+                                    className="btn-status-toggle"
+                                    onClick={() => handleToggleStatus(task)}
+                                  >
+                                    Toggle
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
+                    ) : (
+                      <div className="empty-state">No tasks found.</div>
+                    )}
                   </div>
-                )}
+                </div>
+
+                <div className="note-section">
+                  <div className="section-header">
+                    <h3>Recent Notes</h3>
+                    <span className="count">{filteredNotes.length}</span>
+                  </div>
+                  <div className="note-list">
+                    {filteredNotes.length > 0 ? (
+                      filteredNotes.map((note) => (
+                        <div key={note.id} className="note-card">
+                          <div className="note-content">{note.data?.content || note.description}</div>
+                          <div className="note-meta">
+                            {new Date(note.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-state">No notes yet.</div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </motion.section>
-          )}
-
-          {activeTab === 'map' && (
-            <motion.section key="map" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="map-view">
-              <MindMap />
-            </motion.section>
-          )}
-
-          {activeTab === 'models' && (
-            <motion.section key="models" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="models-view">
-              <div className="section-title" style={{ marginBottom: '16px', fontWeight: 'bold', color: 'var(--primary)', fontSize: '1.2rem' }}>
-                AI Runtimes & Intelligence
+            </>
+          ) : (
+            <div className="models-manager">
+              <div className="section-header">
+                <h2>AI Model Management</h2>
               </div>
               
-              <div className="runtime-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {runtimes.map(runtime => (
-                  <div key={runtime.id} className="native-card" style={{ background: 'var(--secondary-container)', borderRadius: 'var(--radius-lg)', padding: '20px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ 
-                          width: '40px', height: '40px', borderRadius: '50%', 
-                          background: runtime.status === 'online' ? 'rgba(180, 227, 145, 0.2)' : 'rgba(255, 100, 100, 0.2)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                          <Server size={20} color={runtime.status === 'online' ? '#B4E391' : '#FF6464'} />
-                        </div>
-                        <div>
-                          <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{runtime.name}</h3>
-                          <p style={{ margin: 0, fontSize: '0.85rem', opacity: 0.6 }}>{runtime.baseUrl}</p>
-                        </div>
-                      </div>
-                      <div style={{ 
-                        padding: '4px 12px', 
-                        borderRadius: '12px', 
-                        fontSize: '0.8rem', 
-                        fontWeight: 'bold',
-                        background: runtime.status === 'online' ? '#B4E391' : (runtime.status === 'offline' ? '#FF6464' : '#666'),
-                        color: '#000'
-                      }}>
-                        {runtime.status.toUpperCase()}
-                      </div>
+              <div className="runtime-status-bar">
+                {runtimes.length > 0 ? runtimes.map(runtime => (
+                  <div key={runtime.id} className={`runtime-badge status-${runtime.status}`}>
+                    {runtime.name}: {runtime.status}
+                  </div>
+                )) : (
+                  <div className="runtime-badge status-offline">No runtimes registered.</div>
+                )}
+              </div>
+
+              <div className="model-grid">
+                {models.map(model => (
+                  <div key={model.id} className="model-card">
+                    <div className="model-header">
+                      <h3>{model.name}</h3>
+                      <span className="engine-tag">{model.engine}</span>
                     </div>
+                    <p>{model.sizeGB}GB • {model.capabilities.join(', ')}</p>
                     
-                    <button 
-                      onClick={() => { triggerHaptic(); checkModelHealth(runtime.id); }}
-                      style={{ 
-                        width: '100%', padding: '12px', background: 'var(--surface-variant)', 
-                        color: 'var(--on-surface)', border: 'none', borderRadius: '12px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                        marginTop: '16px', fontWeight: 'bold'
-                      }}
-                    >
-                      <Activity size={16} /> Check Health
-                    </button>
+                    {model.status === 'missing' && (
+                      <button 
+                        onClick={() => downloadModel(model.id)}
+                        className="btn-primary"
+                      >
+                        Download Model
+                      </button>
+                    )}
+                    
+                    {model.status === 'downloading' && (
+                      <div className="download-progress">
+                        <div className="progress-bar">
+                          <div 
+                            className="progress-fill" 
+                            style={{ width: `${downloadProgress[model.id] || 0}%` }}
+                          />
+                        </div>
+                        <span className="progress-text">{downloadProgress[model.id] || 0}%</span>
+                      </div>
+                    )}
+                    
+                    {model.status === 'available' && (
+                      <div className="available-badge">✅ Ready to use</div>
+                    )}
                   </div>
                 ))}
-
-                <NexiumPortalMonitor />
-
-                <div className="empty-state" style={{ marginTop: '24px', opacity: 0.7, textAlign: 'center' }}>
-                  <AlertCircle size={32} style={{ margin: '0 auto 12px' }} />
-                  <p style={{ fontSize: '0.9rem', maxWidth: '280px', margin: '0 auto' }}>
-                    Continuum connects directly to your local models. Start a local server (like LM Studio or GPT4All) on port 4891 to enable AI features.
-                  </p>
-                </div>
               </div>
-            </motion.section>
+            </div>
           )}
-        </AnimatePresence>
+        </section>
       </main>
 
-      {/* Project Drawer (Overlay) */}
-      <AnimatePresence>
-        {isProjectDrawerOpen && (
-          <>
-            <motion.div 
-              className="drawer-overlay"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsProjectDrawerOpen(false)}
-            />
-            <motion.div 
-              className="project-drawer"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            >
-              <div className="drawer-handle"></div>
-              <h3 style={{ margin: '0 0 16px 0', color: 'var(--on-surface)' }}>Select Context</h3>
-              <div className="drawer-list">
-                <button 
-                  className={`drawer-item ${activeProjectId === null ? 'active' : ''}`}
-                  onClick={() => { setActiveProject(null); setIsProjectDrawerOpen(false); triggerHaptic(); }}
-                >
-                  🌍 Global Context
-                </button>
-                {projects.map(p => (
-                  <button 
-                    key={p.id}
-                    className={`drawer-item ${activeProjectId === p.id ? 'active' : ''}`}
-                    onClick={() => { setActiveProject(p.id); setIsProjectDrawerOpen(false); triggerHaptic(); }}
-                  >
-                    # {p.title}
-                  </button>
-                ))}
-              </div>
-              <button 
-                onClick={() => { setIsProjectDrawerOpen(false); triggerHaptic(); }}
-                style={{
-                  width: '100%', padding: '16px', background: 'var(--surface-variant)', 
-                  color: 'var(--on-surface)', border: 'none', borderRadius: '12px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  marginTop: '16px', fontWeight: 'bold'
-                }}
-              >
-                <Plus size={20} /> New Project
-              </button>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* Persistent Bottom Navigation */}
-      <nav className="native-bottom-nav">
-        <button 
-          className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('dashboard'); triggerHaptic(); }}
-        >
-          <LayoutDashboard size={24} />
-          <span>Feed</span>
-        </button>
-        <button 
-          className={`nav-btn ${activeTab === 'map' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('map'); triggerHaptic(); }}
-        >
-          <Share2 size={24} />
-          <span>Graph</span>
-        </button>
-        <button 
-          className={`nav-btn ${activeTab === 'models' ? 'active' : ''}`}
-          onClick={() => { setActiveTab('models'); triggerHaptic(); }}
-        >
-          <BrainCircuit size={24} />
-          <span>Intelligence</span>
-        </button>
-      </nav>
-
-      {/* Native Undo Toast */}
-      <AnimatePresence>
-        {undoHistory.length > 0 && (
-          <motion.div 
-            initial={{ y: 100, opacity: 0 }}
-            animate={{ y: -80, opacity: 1 }}
-            exit={{ y: 100, opacity: 0 }}
-            className="native-toast"
-          >
-            <span>Change committed</span>
-            <button 
-              onClick={() => { undo(); triggerHaptic(); }}
-              style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '6px 12px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '4px' }}
-            >
-              <Undo2 size={16} /> Undo
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {undoHistory.length > 0 && (
+        <div className="undo-toast">
+          <div className="undo-message">Change committed.</div>
+          <button onClick={() => undo()} className="btn-undo">
+            <span className="undo-icon">⟲</span>
+            Undo
+          </button>
+        </div>
+      )}
 
       <style>{`
         :root {
-          --surface: #1C1B1F;
-          --on-surface: #E6E1E5;
-          --surface-variant: #49454F;
-          --primary: #D0BCFF;
-          --primary-container: #4F378B;
-          --secondary-container: #332D41;
-          --accent: #D0BCFF;
-          --radius-lg: 28px;
-          --radius-md: 16px;
+          --bg-primary: #0f1115;
+          --bg-secondary: #16191e;
+          --bg-sidebar: #0a0c0f;
+          --accent: #4f46e5;
+          --text-primary: #e2e8f0;
+          --text-secondary: #94a3b8;
+          --border: #1e293b;
+          --status-todo: #64748b;
+          --status-progress: #3b82f6;
+          --status-done: #10b981;
         }
 
-        body { 
-          background: var(--surface); 
-          color: var(--on-surface); 
-          font-family: 'Roboto', system-ui, sans-serif;
-          overscroll-behavior: none;
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          font-family: 'Inter', -apple-system, sans-serif;
+          background: var(--bg-primary);
+          color: var(--text-primary);
         }
 
-        .native-shell {
+        .app-container {
+          display: flex;
           height: 100vh;
+          overflow: hidden;
+        }
+
+        .sidebar {
+          width: 260px;
+          background: var(--bg-sidebar);
+          border-right: 1px solid var(--border);
           display: flex;
           flex-direction: column;
-          padding-bottom: 80px; /* Space for nav */
         }
 
-        .native-app-bar {
-          height: 64px;
+        .sidebar-header {
+          padding: 24px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .sidebar-header h1 {
+          font-size: 1.2rem;
+          margin: 0;
+          font-weight: 700;
+          letter-spacing: -0.025em;
+        }
+
+        .status-dot {
+          width: 8px;
+          height: 8px;
+          background: #10b981;
+          border-radius: 50%;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+        }
+
+        .title-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .status-row { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 8px; }
+
+        .platform-badge {
+          font-size: 0.6rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          padding: 2px 6px;
+          border-radius: 4px;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+        }
+        .platform-android { color: #3ddc84; border-color: #3ddc84; }
+        .platform-web { color: #3b82f6; border-color: #3b82f6; }
+
+        .btn-sync-mini {
+          background: transparent;
+          border: 1px solid var(--accent);
+          color: var(--accent);
+          font-size: 0.65rem;
+          font-weight: 600;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        .btn-sync-mini:hover { background: var(--accent); color: white; }
+
+        .main-nav {
+          padding: 0 16px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .nav-item {
+          width: 100%;
+          padding: 8px 12px;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          text-align: left;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          border-radius: 6px;
+          transition: all 0.2s;
+        }
+
+        .nav-item:hover { background: rgba(255, 255, 255, 0.05); }
+        .nav-item.active { background: var(--bg-secondary); color: var(--text-primary); }
+
+        .section-label {
+          padding: 24px 24px 8px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .project-list {
+          padding: 4px 0;
+        }
+
+        .project-item {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 24px;
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          text-align: left;
+        }
+
+        .project-item:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: var(--text-primary);
+        }
+
+        .project-item.active {
+          background: rgba(79, 70, 229, 0.1);
+          color: var(--accent);
+          border-right: 2px solid var(--accent);
+        }
+
+        .project-icon {
+          font-size: 1rem;
+          opacity: 0.7;
+        }
+
+        .suggested-actions-sidebar {
+          margin-top: auto;
+          padding-bottom: 24px;
+          border-top: 1px solid var(--border);
+        }
+
+        .actions-mini-list {
           padding: 0 16px;
           display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: var(--surface);
-          z-index: 10;
-        }
-
-        .app-bar-title { font-size: 1.4rem; font-weight: 400; }
-
-        .native-content { flex: 1; overflow-y: auto; padding: 16px; }
-
-        .native-bottom-nav {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 80px;
-          background: #25232A;
-          display: flex;
-          justify-content: space-around;
-          align-items: center;
-          padding-bottom: env(safe-area-inset-bottom);
-          box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-          border-top: 1px solid var(--surface-variant);
-          z-index: 50;
-        }
-
-        .nav-btn {
-          display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 4px;
-          background: transparent;
-          border: none;
-          color: var(--on-surface);
-          opacity: 0.7;
-          width: 80px;
-          cursor: pointer;
+          gap: 8px;
         }
 
-        .nav-btn.active { opacity: 1; color: var(--primary); }
-        .nav-btn.active span { font-weight: 700; }
-        .nav-btn span { font-size: 0.75rem; }
-
-        .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 32px 16px;
-          text-align: center;
-          background: rgba(255,255,255,0.02);
-          border: 1px dashed rgba(255,255,255,0.1);
-          border-radius: var(--radius-lg);
-          color: #A09E9F;
+        .action-mini-card {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 12px;
         }
 
-        /* MD3 Cards */
-        .native-card {
-          background: var(--secondary-container);
-          border-radius: var(--radius-lg);
-          padding: 20px;
-          margin-bottom: 16px;
-        }
-
-        .native-task-card {
-          background: var(--surface-variant);
-          border-radius: var(--radius-md);
-          padding: 16px;
-          margin-bottom: 12px;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          position: relative;
-          overflow: hidden;
-          cursor: pointer;
-        }
-
-        .task-indicator {
-          width: 4px;
-          height: 40px;
-          background: var(--primary);
-          border-radius: 2px;
-        }
-
-        .status-done .task-indicator { background: #B4E391; }
-        .status-in_progress .task-indicator { background: #7FBCFF; }
-
-        .capture-surface {
-          background: var(--secondary-container);
-          border-radius: 40px;
-          padding: 8px 16px;
-          display: flex;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-
-        .capture-surface textarea {
-          flex: 1;
-          background: transparent;
-          border: none;
-          color: white;
-          padding: 8px;
-          font-size: 1rem;
-          outline: none;
-          resize: none;
-        }
-
-        .fab-mini {
-          background: var(--primary-container);
-          color: var(--primary);
-          border: none;
-          width: 40px;
-          height: 40px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-        }
-
-        /* Drawer */
-        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; }
-        .project-drawer {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: #25232A;
-          border-top-left-radius: var(--radius-lg);
-          border-top-right-radius: var(--radius-lg);
-          padding: 24px;
-          z-index: 101;
-          max-height: 80vh;
-          overflow-y: auto;
-        }
-
-        .drawer-handle {
-          width: 40px;
-          height: 5px;
-          background: var(--surface-variant);
-          border-radius: 10px;
-          margin: 0 auto 20px;
-          opacity: 0.5;
-        }
-
-        .drawer-item {
-          display: block;
-          width: 100%;
-          text-align: left;
-          padding: 16px;
-          background: transparent;
-          border: none;
-          color: var(--on-surface);
-          border-radius: var(--radius-md);
-          font-size: 1.1rem;
+        .action-mini-title {
+          font-size: 0.85rem;
+          font-weight: 500;
           margin-bottom: 8px;
-          cursor: pointer;
+          color: var(--text-primary);
         }
 
-        .drawer-item.active { background: var(--primary-container); color: var(--primary); }
-
-        .native-toast {
-          position: fixed;
-          background: #25232A;
-          border: 1px solid var(--primary);
-          padding: 12px 24px;
-          border-radius: 100px;
-          left: 16px;
-          right: 16px;
+        .action-mini-btns {
           display: flex;
+          gap: 8px;
+        }
+
+        .btn-mini {
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid var(--border);
+          color: var(--text-secondary);
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 0.75rem;
+          cursor: pointer;
+          flex: 1;
+        }
+
+        .btn-mini:hover { background: rgba(255, 255, 255, 0.1); }
+        .btn-accept:hover { background: var(--status-done); color: white; border-color: var(--status-done); }
+
+        .main-content {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .content-header {
+          height: 64px;
+          padding: 0 32px;
+          display: flex;
+          align-items: center;
           justify-content: space-between;
-          align-items: center;
-          z-index: 1000;
+          border-bottom: 1px solid var(--border);
+          background: var(--bg-secondary);
         }
 
-        .thinking-indicator {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          background: var(--primary-container);
-          border-radius: 50%;
-          width: 24px;
-          height: 24px;
-        }
-
-        .icon-btn { background: transparent; border: none; color: var(--on-surface); padding: 8px; border-radius: 50%; cursor: pointer; }
-        
-        .ai-status-message {
-          margin: 0 16px 24px 16px;
-          padding: 12px 16px;
-          border-radius: 12px;
+        .breadcrumb {
           font-size: 0.9rem;
           display: flex;
           align-items: center;
-          transition: all 0.3s ease;
+          gap: 8px;
         }
 
-        .ai-status-message.thinking { background: rgba(208, 188, 255, 0.1); border: 1px solid rgba(208, 188, 255, 0.3); color: var(--primary); }
-        .ai-status-message.retrying { background: rgba(255, 183, 77, 0.1); border: 1px solid rgba(255, 183, 77, 0.3); color: #ffb74d; }
-        .ai-status-message.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; }
+        .folder { color: var(--text-secondary); }
+        .separator { color: var(--border); }
+        .current { font-weight: 600; }
 
-        .thinking { animation: pulse 1.5s infinite; }
-        @keyframes pulse {
-          0% { opacity: 0.6; }
-          50% { opacity: 1; }
-          100% { opacity: 0.6; }
+        .header-actions {
+          display: flex;
+          gap: 12px;
         }
 
-        .native-shell * { transition: background-color 0.2s; }
+        .btn-icon {
+          background: transparent;
+          border: none;
+          color: var(--text-secondary);
+          font-size: 1.2rem;
+          cursor: pointer;
+          padding: 8px;
+          border-radius: 6px;
+          transition: background 0.2s;
+        }
+
+        .btn-icon:hover {
+          background: rgba(255, 255, 255, 0.05);
+        }
+
+        .dashboard {
+          padding: 40px;
+          flex: 1;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+        }
+
+        .project-detail h2, .global-header h2 {
+          font-size: 1.8rem;
+          margin: 0 0 12px;
+        }
+
+        .description {
+          font-size: 1rem;
+          color: var(--text-secondary);
+          line-height: 1.6;
+          max-width: 600px;
+          margin: 0;
+        }
+
+        .metadata {
+          margin-top: 24px;
+          font-family: monospace;
+          font-size: 0.8rem;
+          color: var(--accent);
+        }
+
+        .pending-mutations-section {
+          background: rgba(79, 70, 229, 0.05);
+          border: 1px solid var(--accent);
+          border-radius: 12px;
+          padding: 20px;
+        }
+
+        .mutation-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .mutation-card {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background: var(--bg-secondary);
+          padding: 12px 16px;
+          border-radius: 8px;
+          border: 1px solid var(--border);
+        }
+
+        .mutation-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .mutation-info strong { font-size: 0.9rem; color: var(--accent); }
+        .mutation-info span { font-size: 0.8rem; color: var(--text-secondary); font-family: monospace; }
+
+        .quick-capture-section {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 20px;
+        }
+
+        .capture-input {
+          width: 100%;
+          background: transparent;
+          border: none;
+          color: var(--text-primary);
+          font-size: 1.1rem;
+          resize: none;
+          min-height: 60px;
+          margin-bottom: 12px;
+          outline: none;
+        }
+
+        .form-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .hint {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+        }
+
+        .btn-primary {
+          background: var(--accent);
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+
+        .btn-primary:hover { opacity: 0.9; }
+
+        .dashboard-grid {
+          display: grid;
+          grid-template-columns: 2fr 1fr;
+          gap: 32px;
+        }
+
+        .section-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+          margin-bottom: 20px;
+        }
+
+        .section-header h3 {
+          margin: 0;
+          font-size: 1rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--text-secondary);
+        }
+
+        .count {
+          background: var(--bg-secondary);
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+
+        .btn-ai-action {
+          background: rgba(79, 70, 229, 0.1);
+          color: var(--accent);
+          border: 1px solid var(--accent);
+          padding: 4px 12px;
+          border-radius: 6px;
+          font-size: 0.8rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .btn-ai-action:hover { background: var(--accent); color: white; }
+
+        .task-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 16px;
+        }
+
+        .task-card {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          transition: border-color 0.2s;
+        }
+
+        .task-card:hover { border-color: var(--accent); }
+
+        .task-body {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .task-body h3 {
+          margin: 0;
+          font-size: 1rem;
+        }
+
+        .task-body p {
+          margin: 0;
+          font-size: 0.85rem;
+          color: var(--text-secondary);
+          line-height: 1.4;
+        }
+
+        .task-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 12px;
+        }
+
+        .status-badge {
+          font-size: 0.65rem;
+          font-weight: 700;
+          padding: 2px 6px;
+          border-radius: 4px;
+        }
+
+        .badge-todo { background: rgba(100, 116, 139, 0.1); color: var(--status-todo); }
+        .badge-in_progress { background: rgba(59, 130, 246, 0.1); color: var(--status-progress); }
+        .badge-done { background: rgba(16, 185, 129, 0.1); color: var(--status-done); }
+
+        .btn-status-toggle {
+          background: transparent;
+          border: 1px solid var(--border);
+          color: var(--text-secondary);
+          font-size: 0.75rem;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+
+        .note-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .note-card {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 16px;
+        }
+
+        .note-content {
+          font-size: 0.9rem;
+          line-height: 1.5;
+          margin-bottom: 8px;
+          white-space: pre-wrap;
+        }
+
+        .note-meta {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+        }
+
+        .empty-state {
+          padding: 40px;
+          text-align: center;
+          color: var(--text-secondary);
+          border: 1px dashed var(--border);
+          border-radius: 12px;
+          font-size: 0.9rem;
+        }
+
+        .undo-toast {
+          position: fixed;
+          bottom: 24px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: #1e293b;
+          border: 1px solid var(--accent);
+          padding: 12px 24px;
+          border-radius: 100px;
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+          animation: slideUp 0.3s ease-out;
+          z-index: 1000;
+        }
+
+        .undo-message { font-size: 0.9rem; font-weight: 500; }
+
+        .btn-undo {
+          background: var(--accent);
+          color: white;
+          border: none;
+          padding: 6px 16px;
+          border-radius: 50px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .undo-icon { font-size: 1.1rem; }
+
+        .models-manager {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .runtime-status-bar {
+          display: flex;
+          gap: 12px;
+        }
+
+        .runtime-badge {
+          font-size: 0.8rem;
+          padding: 4px 12px;
+          border-radius: 100px;
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+        }
+
+        .runtime-badge.status-online { border-color: var(--status-done); color: var(--status-done); }
+        .runtime-badge.status-offline { border-color: #ef4444; color: #ef4444; }
+
+        .model-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 20px;
+        }
+
+        .model-card {
+          background: var(--bg-secondary);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .model-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .engine-tag {
+          font-size: 0.7rem;
+          padding: 2px 8px;
+          background: var(--accent);
+          border-radius: 4px;
+          font-weight: 700;
+        }
+
+        .available-badge { font-size: 0.9rem; color: var(--status-done); font-weight: 600; }
+
+        .download-progress {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .progress-bar {
+          height: 8px;
+          background: var(--bg-primary);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+        .progress-text { font-size: 0.8rem; color: var(--text-secondary); text-align: right; }
+
+        @keyframes slideUp {
+          from { transform: translate(-50%, 100%); opacity: 0; }
+          to { transform: translate(-50%, 0); opacity: 1; }
+        }
       `}</style>
     </div>
   );

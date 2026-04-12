@@ -1,9 +1,8 @@
 import { type AIRuntime, type AIModel } from './types';
-import { geminiService } from './gemini-service';
 
 /**
  * AI Bridge for Project Singularity
- * Handles low-level communication with LLM runtimes.
+ * Handles low-level communication with local LLM runtimes.
  */
 
 export const callLocalLLM = async (
@@ -12,9 +11,26 @@ export const callLocalLLM = async (
   userPrompt: string
 ): Promise<string> => {
   try {
-    return await geminiService.generateContent(systemPrompt, userPrompt);
+    const response = await fetch(`${runtime.baseUrl}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'default', // Local runtimes usually ignore this or have a default
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.7,
+        stream: false
+      })
+    });
+
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    return data.choices[0]?.message?.content || '';
   } catch (error) {
-    console.error('Failed to call Gemini API:', error);
+    console.error('Failed to call local LLM:', error);
     throw error;
   }
 };
@@ -50,28 +66,4 @@ export const checkRuntime = async (runtime: AIRuntime): Promise<boolean> => {
   } catch {
     return false;
   }
-};
-
-/**
- * Executes a shell command via the Nexium Bridge.
- * (In a native Capacitor app, this would use a custom plugin or the Capacitor HTTP/Filesystem bridge).
- */
-export const runShell = async (command: string): Promise<string> => {
-  // Mocking the bridge for the web environment. 
-  // In the real Ghost Nexium, this calls out to the Termux environment.
-  console.log(`[Nexium-Bridge] Executing: ${command}`);
-  
-  // Return a mock output for the web environment to satisfy the store logic.
-  if (command.includes('remote list')) {
-    return `ID                                    Description                                    Repo                Last active                Status         
- 12557025922133699993    Implement Gemini API Pivot                     DaRipper91/contiinuum   2m ago                  Awaiting User F
- 17532370895457137341    Robust Error Recovery Logic                    DaRipper91/contiinuum   1h ago                  Thinking`;
-  }
-
-  if (command.includes('remote pull')) {
-    console.log(`[Nexium-Bridge] Pulling results for portal...`);
-    return "Patch applied successfully.";
-  }
-  
-  return "Command executed successfully.";
 };

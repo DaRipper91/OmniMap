@@ -73,37 +73,6 @@ For every development task, the following chain **must** be respected:
 - [x] **Task 6.4: Suggested actions panel.**
 - [x] **Task 6.5: Undo notification surface.**
 
-### Phase 7: Native Mobile UI Overhaul (Material Design 3)
-- [x] **Task 7.1:** Install `@capacitor/haptics` and configure dependencies.
-- [x] **Task 7.2:** Implement `BottomNavigationBar` and refactor `App.tsx` layout.
-- [x] **Task 7.3:** Implement `ProjectDrawer` (Slide-up selection).
-- [x] **Task 7.4:** Apply MD3 Styling (28px radius, tonal surfaces, typography).
-- [x] **Task 7.5:** Integrate Haptics into mutation and capture flows.
-- [x] **Task 7.6:** Implement spring transitions via `framer-motion`.
-
-### Phase 8: Persistence & Stability
-- [x] **Task 8.1:** Harden AI Parser and Fix Interval Leak.
-- [x] **Task 8.2:** Implement LocalStorage fallback.
-- [x] **Task 8.3:** Implement Capacitor Filesystem persistence.
-- [x] **Task 8.4:** Create Auto-Save debouncer.
-
-### Phase 9: Live Intelligence Integration
-- [x] **Task 9.1:** Define standard AI Agent Personas (Architect, Researcher, Coder).
-- [x] **Task 9.2:** Implement `initializeRuntimes` with GPT4All discovery.
-- [x] **Task 9.3:** Add `isThinking` state and UI feedback (Spinners/Pulse).
-- [x] **Task 9.4:** Connect `requestAI` to live GPT4All endpoint.
-- [x] **Task 9.5:** Implement Error/Offline recovery for AI requests.
-
-### Phase 10: The Master Synchronization Hub (Nexium Bridge)
-- [ ] **Task 10.1: Nexium Portal Monitor**
-  - Implement UI to list active cloud sessions (`jules remote list`).
-- [ ] **Task 10.2: Briefing Generator UI**
-  - Add "Open Portal" button to package local project state.
-- [ ] **Task 10.3: Result Ingestion**
-  - Trigger `jules remote pull --apply` from within the app.
-- [ ] **Task 10.4: Graph Persistence Hardening**
-  - Ensure complex graph nodes are properly restored after handoff.
-
 ---
 
 ## 🚦 Execution Directive
