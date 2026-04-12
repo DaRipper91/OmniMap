@@ -5,15 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.omnimap.presentation.OmniMapApp
 import com.omnimap.presentation.dashboard.DashboardViewModel
 import com.omnimap.presentation.graph.GraphViewModel
 
 class MainActivity : ComponentActivity() {
-    // Note: In a production setup this would be managed by Hilt or Koin,
-    // but we use a lateinit placeholder for the foundation phase.
-    private lateinit var graphViewModel: GraphViewModel
-    private lateinit var dashboardViewModel: DashboardViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -21,10 +20,32 @@ class MainActivity : ComponentActivity() {
         // Task 1: Immersive Edge-to-Edge display for bezelless UX
         enableEdgeToEdge()
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        
-        // Note: initialize the view models here via DI or factory.
 
         setContent {
+            val appContainer = (application as OmniMapApplication).container
+            
+            // Manual Dependency Injection Factory
+            val factory = object : ViewModelProvider.Factory {
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(GraphViewModel::class.java)) {
+                        @Suppress("UNCHECKED_CAST")
+                        return GraphViewModel(
+                            repository = appContainer.omniMapRepository,
+                            hapticEngine = appContainer.hapticEngine,
+                            aiRepository = appContainer.aiInferenceRepository
+                        ) as T
+                    }
+                    if (modelClass.isAssignableFrom(DashboardViewModel::class.java)) {
+                        @Suppress("UNCHECKED_CAST")
+                        return DashboardViewModel(repository = appContainer.omniMapRepository) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class")
+                }
+            }
+
+            val graphViewModel: GraphViewModel = viewModel(factory = factory)
+            val dashboardViewModel: DashboardViewModel = viewModel(factory = factory)
+
             OmniMapApp(
                 graphViewModel = graphViewModel,
                 dashboardViewModel = dashboardViewModel
