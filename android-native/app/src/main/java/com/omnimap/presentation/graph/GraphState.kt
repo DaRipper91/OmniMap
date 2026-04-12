@@ -1,0 +1,11 @@
+package com.omnimap.presentation.graph
+
+import com.omnimap.domain.model.Edge
+import com.omnimap.domain.model.Node
+
+data class GraphState(
+    val nodes: Map<String, Node> = emptyMap(),
+    val edges: List<Edge> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null
+)

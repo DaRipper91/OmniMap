@@ -1,0 +1,19 @@
+package com.omnimap.domain.repository
+
+import com.omnimap.domain.model.Edge
+import com.omnimap.domain.model.Node
+import kotlinx.coroutines.flow.Flow
+
+interface OmniMapRepository {
+    fun getAllNodes(): Flow<List<Node>>
+    fun getNodeById(id: String): Flow<Node?>
+    suspend fun insertNode(node: Node)
+    suspend fun updateNode(node: Node)
+    suspend fun deleteNode(node: Node)
+
+    fun getAllEdges(): Flow<List<Edge>>
+    fun getEdgesForNode(nodeId: String): Flow<List<Edge>>
+    suspend fun insertEdge(edge: Edge)
+    suspend fun updateEdge(edge: Edge)
+    suspend fun deleteEdge(edge: Edge)
+}
