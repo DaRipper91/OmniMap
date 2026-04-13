@@ -1,31 +1,32 @@
-# OmniMap Project Report: Phase 1 (Android Foundation)
+# OmniMap Project Report: Phase 2 (Native Experience & Intelligence)
 
 ## 🎯 Executive Summary
-Phase 1 of the OmniMap project has been successfully completed. We have established a robust, purely native Android foundation using Kotlin and Jetpack Compose, completely eliminating legacy web-wrapper code to ensure an uncompromised 120Hz tactile experience on flagship devices like the Pixel 10 Pro.
+Phase 1 (Foundation) is complete. We are now executing Phase 2, focused on premium native UX and local/cloud AI integration. The UI shell has been successfully modernized with a multi-tab bottom navigation system.
 
-## ✅ Accomplishments
+## ✅ Accomplishments (Phase 2)
 
-1. **Task 1: The DAO & Repository Pattern**
-   - Implemented `NodeDao` and `EdgeDao` using Kotlin Coroutines and Reactive Flows.
-   - Built the `OmniMapDatabase` (Room) and `OmniMapRepository` establishing a Clean Architecture boundary.
+1. **Task 1: The Native UI Shell**
+   - Implemented Jetpack Compose `Scaffold` with a Bottom Navigation Bar.
+   - Added tabs for **Dashboard**, **Graph**, and the new **Live Intelligence Feed**.
+   - Refactored chat UI into a reusable `ChatContent` component shared between the Graph bottom sheet and the full-screen Feed.
+   - Enabled Edge-to-Edge support for immersive UX.
 
-2. **Task 2: The Graph Engine**
-   - Constructed a high-performance Coroutines Actor/StateFlow engine (`GraphViewModel`).
-   - The engine processes `GraphIntent` events sequentially, ensuring thread safety and decoupled physics calculations, preventing UI stutter.
+2. **Task 2: Live Intelligence Feed (Pivot to Gemini)**
+   - Successfully pivoted the Android AI core from local Ollama to the Google Gemini Pro API.
+   - Implemented `GeminiRepositoryImpl` using the official `generativeai` Android SDK.
+   - Built a robust JSON parsing engine in `GraphViewModel` that translates AI architectural advice into real-time graph mutations (automatic Node/Edge creation).
+   - Integrated system instructions into the AI prompt to ensure structured JSON output from the `omnimap-architect`.
 
-3. **Task 3: Interactive Canvas Prototype**
-   - Created a native Jetpack Compose Canvas (`OmniMapCanvas`).
-   - Built a beautiful `NodeComposable` using Material Design 3 tokens (`#1C1B1F` surface, `28.dp` radius) with `Modifier.pointerInput` for smooth drag-and-drop.
+## 🚧 In Progress (Phase 2)
 
-4. **Task 4: Haptic Integration**
-   - Built the `AndroidHapticEngine` directly wrapping the Android 12+ API 31 `VibratorManager`.
-   - Bound native `HeavySnap` hardware effects to connection events, achieving a realistic, physical UI feel.
-
-5. **Task 5: Local Inference Bridge**
-   - Implemented a Retrofit REST interface (`OllamaApi`) to ping the local CachyOS rig.
-   - Designed strict DTOs (`OllamaRequest`, `OllamaResponse`) enforcing `format: "json"` to guarantee structured payload mutations from the `omnimap-architect` model.
+3. **Task 3: Global Search & Data Management**
+   - **Objective:** Implement Full-Text Search (FTS) in Room and CRUD dialogs.
+   - **Status:** Planning Room FTS integration.
 
 ---
+
+# OmniMap Project Report: Phase 1 (Android Foundation) - ARCHIVED
+... (rest of the content)
 
 ## 🔄 Cross-Device Development Guide (How to Continue)
 OmniMap is designed to be built across multiple environments (e.g., Linux Workstation, Android via Termux). To continue development seamlessly on another device, follow this protocol:

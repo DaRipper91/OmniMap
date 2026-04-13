@@ -1,5 +1,0 @@
-# 📂 INDEX: ~/Continuum/android/app/src/main/res/drawable-port-xhdpi
-**Scan Date:** 2026-04-12 10:34:02
----
-## 📄 FILES
-- [ ] **splash.png** | 12 KB | 2026-03-25
