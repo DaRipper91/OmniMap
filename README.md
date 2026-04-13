@@ -13,7 +13,7 @@
 **Stop switching context. Start flowing.**
 *OmniMap is a high-performance, local-first, AI-writable graph of thoughts, tasks, and relationships built natively for Android.*
 
-[**Explore the Tech**](#-the-stack) • [**View the Evolution**](./DEMOS.md) • [**Build the APK**](#-quick-start)
+[**Explore the Tech**](#-the-stack) • [**Latest Release**](https://github.com/DaRipper91/OmniMap/releases/tag/v0.2.0-kmp) • [**Build the App**](#-quick-start)
 
 </div>
 
@@ -24,13 +24,13 @@
 OmniMap isn't just another task manager. It's a **secure, native intelligence engine** that turns your AI from a chatty assistant into a **productive architect** of your mental workspace.
 
 ### 🚀 120Hz Tactile Experience
-Built with **Jetpack Compose** and optimized for flagship devices like the **Pixel 10 Pro**. Experience smooth 120Hz animations and sub-millisecond response times.
+Built with **Jetpack Compose** (Android) and **Compose Multiplatform** (Desktop). Optimized for flagship devices like the **Pixel 10 Pro**. Experience smooth 120Hz animations and sub-millisecond response times.
 
 ### 🧠 AI-Writable Graph
 Powered by the **Gemini 1.5 Pro SDK**. The AI (**omnimap-architect**) doesn't just suggest; it proposes real-time mutations to your graph. New nodes and edges are created automatically as you think.
 
 ### 🛡️ Local-First Data
-Your thoughts are yours. All project data is stored locally in a robust **Room** database. No cloud required for core functionality.
+Your thoughts are yours. All project data is stored locally in a robust **Room** (Android) or **SQLDelight/Mock** (Desktop) database. No cloud required for core functionality.
 
 ---
 
@@ -50,11 +50,11 @@ Your thoughts are yours. All project data is stored locally in a robust **Room**
   <tr>
     <td width="50%" valign="top">
       <h3>📳 Haptic Snap</h3>
-      Deep hardware integration via the Android **VibratorManager**. Feel the connections as they snap into place on the canvas.
+      Deep hardware integration via the Android **VibratorManager**. Feel the connections as they snap into place on the canvas (Android only).
     </td>
     <td width="50%" valign="top">
       <h3>🔍 Global Search</h3>
-      Instant retrieval of nodes, tasks, and notes across all project contexts using Room FTS (Full-Text Search).
+      Instant retrieval of nodes, tasks, and notes across all project contexts using Full-Text Search.
     </td>
   </tr>
 </table>
@@ -65,9 +65,9 @@ Your thoughts are yours. All project data is stored locally in a robust **Room**
 
 | Layer | Technology |
 | :--- | :--- |
-| **Logic** | `Kotlin` + `Coroutines` + `Flow` |
-| **UI** | `Jetpack Compose` (MD3 / 120Hz Optimized) |
-| **Persistence** | `Room` (Local SQLite) |
+| **Logic** | `Kotlin Multiplatform` + `Coroutines` + `Flow` |
+| **UI** | `Compose Multiplatform` (Android + Desktop JVM) |
+| **Persistence** | `Room` (Android) / Local Persistence Layer |
 | **Intelligence** | `Google Gemini 1.5 Pro SDK` + Local `omnimap-architect` |
 | **Hardware** | `VibratorManager` (Native Android Haptics) |
 
@@ -81,17 +81,18 @@ git clone https://github.com/DaRipper91/OmniMap.git
 cd OmniMap
 ```
 
-### 2. Open in Android Studio
-Open the `android-native/` directory in **Android Studio Ladybug (or newer)**.
+### 2. Open in Android Studio / IntelliJ IDEA
+Open the root `OmniMap` directory in **Android Studio Ladybug** or **IntelliJ IDEA**.
 
 ### 3. Configure AI
-Add your Gemini API key to `local.properties`:
+Add your Gemini API key to `local.properties` in the root:
 ```properties
 GEMINI_API_KEY=your_api_key_here
 ```
 
 ### 4. Deploy
-Hit **Run** and deploy natively to your Pixel 9/10 Pro or emulator.
+- **Android:** Select `androidApp` and hit **Run**.
+- **Desktop:** Select `desktop` and hit **Run**.
 
 ---
 
@@ -99,10 +100,10 @@ Hit **Run** and deploy natively to your Pixel 9/10 Pro or emulator.
 
 ### 🌌 READY TO ELIMINATE CONTEXT SWITCHING?
 
-[**DOWNLOAD OMNIMAP NOW**](https://github.com/DaRipper91/OmniMap/archive/refs/heads/main.zip)
+[**DOWNLOAD THE LATEST APK**](https://github.com/DaRipper91/OmniMap/releases/download/v0.2.0-kmp/app-debug.apk)
 
 ---
 *Built with 🦾 by DaRipper91 & the 8-Agent Chain*
-*Status: **PHASE 2 IN PROGRESS** - Native Intelligence Feed Live*
+*Status: **PHASE 2 IN PROGRESS** - Kotlin Multiplatform Transition Complete*
 
 </div>
