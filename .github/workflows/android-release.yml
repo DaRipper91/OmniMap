@@ -27,15 +27,20 @@ jobs:
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> local.properties
-          # Also create it in androidApp just in case
+          # Create it in all possible locations to be safe
           mkdir -p androidApp
           cp local.properties androidApp/local.properties
+          mkdir -p androidApp/app
+          cp local.properties androidApp/app/local.properties
 
       - name: Grant Execute Permissions for gradlew
         run: chmod +x gradlew
 
       - name: Build Android APK
-        run: ./gradlew :androidApp:app:assembleDebug -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
+        run: |
+          # Use the root gradlew to build the specific subproject task
+          # The correct path based on root settings.gradle.kts is :androidApp:app
+          ./gradlew :androidApp:app:assembleDebug --stacktrace -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
 
       - name: Get Version Name
         id: version
