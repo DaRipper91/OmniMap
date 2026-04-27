@@ -1,7 +1,8 @@
 package com.omnimap.presentation.navigation
 
 sealed class Screen(val route: String) {
-    object Dashboard : Screen("dashboard")
-    object Graph : Screen("graph")
-    object Feed : Screen("feed")
+    data object Dashboard : Screen("dashboard")
+    data object Graph : Screen("graph")
+    data object Feed : Screen("feed")
+    data object Welcome : Screen("welcome")
 }

@@ -29,6 +29,16 @@ class GraphViewModel(
     private val connectivityObserver: ConnectivityObserver
 ) : ViewModel() {
 
+    fun isAiConfigured(): Boolean = aiRepository.isConfigured()
+
+    fun saveApiKey(key: String) {
+        viewModelScope.launch {
+            if (aiRepository is com.omnimap.data.repository.GeminiRepositoryImpl) {
+                aiRepository.saveApiKey(key)
+            }
+        }
+    }
+
     private val _state = MutableStateFlow(GraphState(isLoading = true))
     val state: StateFlow<GraphState> = _state.asStateFlow()
 

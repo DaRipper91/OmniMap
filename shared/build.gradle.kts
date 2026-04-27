@@ -65,6 +65,10 @@ kotlin {
     }
 }
 
+dependencies {
+    add("kspAndroid", "androidx.room:room-compiler:2.6.1")
+}
+
 android {
     namespace = "com.omnimap.shared"
     compileSdk = 34

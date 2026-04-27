@@ -6,16 +6,24 @@ import com.omnimap.core.connectivity.ConnectivityObserver
 import com.omnimap.core.connectivity.NetworkConnectivityObserver
 import com.omnimap.core.haptics.AndroidHapticEngine
 import com.omnimap.core.haptics.HapticEngine
+import com.omnimap.core.settings.AndroidSettingsManager
+import com.omnimap.core.settings.SettingsManager
 import com.omnimap.data.local.db.OmniMapDatabase
 import com.omnimap.data.remote.api.OllamaApi
 import com.omnimap.data.repository.GeminiRepositoryImpl
 import com.omnimap.data.repository.OmniMapRepositoryImpl
 import com.omnimap.domain.repository.AiInferenceRepository
 import com.omnimap.domain.repository.OmniMapRepository
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.runBlocking
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 class AppContainer(private val context: Context) {
+    val settingsManager: SettingsManager by lazy {
+        AndroidSettingsManager(context)
+    }
+
     val database: OmniMapDatabase by lazy {
         Room.databaseBuilder(
             context,
@@ -50,9 +58,7 @@ class AppContainer(private val context: Context) {
     }
 
     val aiInferenceRepository: AiInferenceRepository by lazy {
-        // Pivot: Switching from local Ollama to Google Gemini API
-        // NOTE: The user should provide the actual API key via environment variable or local.properties
-        val apiKey = "REPLACE_WITH_GEMINI_API_KEY" 
-        GeminiRepositoryImpl(apiKey = apiKey)
+        val apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: ""
+        GeminiRepositoryImpl(apiKey = apiKey, settingsManager = settingsManager)
     }
 }
