@@ -14,7 +14,13 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Setup Java
+      - name: Setup Java 21 (Required by toolchain)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+
+      - name: Setup Java 17 (Required by some modules)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -43,8 +49,7 @@ jobs:
 
       - name: Build Android APK
         run: |
-          # Try building all assemble tasks to see what we get
-          ./gradlew assembleDebug -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
+          ./gradlew :androidApp:app:assembleDebug -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
 
       - name: Get Version Name
         id: version
