@@ -58,7 +58,38 @@ class AppContainer(private val context: Context) {
     }
 
     val aiInferenceRepository: AiInferenceRepository by lazy {
-        val apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: ""
-        GeminiRepositoryImpl(apiKey = apiKey, settingsManager = settingsManager)
+        object : AiInferenceRepository {
+            private val geminiRepo = GeminiRepositoryImpl(
+                apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: "",
+                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro",
+                settingsManager = settingsManager
+            )
+            
+            private val openAiRepo = com.omnimap.data.repository.OpenAiRepositoryImpl(
+                apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: "",
+                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "llama3.1",
+                baseUrl = runBlocking { settingsManager.getBaseUrl().firstOrNull() },
+                settingsManager = settingsManager
+            )
+
+            private fun getActiveRepo(): AiInferenceRepository {
+                val model = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro"
+                return if (model.startsWith("gemini")) geminiRepo else openAiRepo
+            }
+
+            override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> =
+                getActiveRepo().generateNodeSuggestion(contextPrompt)
+
+            override fun isConfigured(): Boolean = getActiveRepo().isConfigured()
+            
+            override fun getSelectedModel(): String = 
+                runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro"
+
+            override suspend fun saveConfiguration(apiKey: String, model: String, baseUrl: String?) {
+                settingsManager.saveGeminiApiKey(apiKey)
+                settingsManager.saveSelectedModel(model)
+                settingsManager.saveBaseUrl(baseUrl)
+            }
+        }
     }
 }

@@ -31,6 +31,12 @@ class GraphViewModel(
 
     fun isAiConfigured(): Boolean = aiRepository.isConfigured()
 
+    fun saveAiConfiguration(apiKey: String, model: String, baseUrl: String?) {
+        viewModelScope.launch {
+            aiRepository.saveConfiguration(apiKey, model, baseUrl)
+        }
+    }
+
     fun saveApiKey(key: String) {
         viewModelScope.launch {
             if (aiRepository is com.omnimap.data.repository.GeminiRepositoryImpl) {

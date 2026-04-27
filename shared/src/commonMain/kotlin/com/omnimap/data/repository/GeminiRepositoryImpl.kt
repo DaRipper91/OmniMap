@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.onEach
 
 class GeminiRepositoryImpl(
     private var apiKey: String,
+    private var selectedModel: String = "gemini-1.5-pro",
     private val settingsManager: SettingsManager
 ) : AiInferenceRepository {
 
-    private val modelFlow = MutableStateFlow<GenerativeModel?>(createModel(apiKey))
+    private val modelFlow = MutableStateFlow<GenerativeModel?>(createModel(apiKey, selectedModel))
     private val scope = CoroutineScope(Dispatchers.Main)
 
     init {
@@ -23,18 +24,27 @@ class GeminiRepositoryImpl(
             .onEach { newKey ->
                 if (newKey != null && newKey != apiKey) {
                     apiKey = newKey
-                    modelFlow.value = createModel(newKey)
+                    modelFlow.value = createModel(newKey, selectedModel)
+                }
+            }
+            .launchIn(scope)
+            
+        settingsManager.getSelectedModel()
+            .onEach { newModel ->
+                if (newModel != selectedModel && newModel.startsWith("gemini")) {
+                    selectedModel = newModel
+                    modelFlow.value = createModel(apiKey, newModel)
                 }
             }
             .launchIn(scope)
     }
 
-    private fun createModel(key: String): GenerativeModel? {
+    private fun createModel(key: String, modelName: String): GenerativeModel? {
         return if (key.isBlank() || key.startsWith("REPLACE_WITH") || key == "dummy_key_for_build") {
             null
         } else {
             GenerativeModel(
-                modelName = "gemini-1.5-pro",
+                modelName = modelName,
                 apiKey = key,
                 generationConfig = generationConfig {
                     responseMimeType = "application/json"
@@ -44,9 +54,17 @@ class GeminiRepositoryImpl(
     }
 
     override fun isConfigured(): Boolean = modelFlow.value != null
+    
+    override fun getSelectedModel(): String = selectedModel
 
     suspend fun saveApiKey(key: String) {
         settingsManager.saveGeminiApiKey(key)
+    }
+    
+    override suspend fun saveConfiguration(apiKey: String, model: String, baseUrl: String?) {
+        settingsManager.saveGeminiApiKey(apiKey)
+        settingsManager.saveSelectedModel(model)
+        settingsManager.saveBaseUrl(baseUrl)
     }
 
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> {

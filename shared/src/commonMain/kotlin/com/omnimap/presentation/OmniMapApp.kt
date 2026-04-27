@@ -60,13 +60,12 @@ fun OmniMapApp(
                 when (currentScreen) {
                     Screen.Welcome -> {
                         WelcomeScreen(
-                            onApiKeyEntered = { key ->
-                                graphViewModel.saveApiKey(key)
+                            onConfigurationFinished = { key, model, url ->
+                                graphViewModel.saveAiConfiguration(key, model, url)
                                 currentScreen = Screen.Dashboard
                             }
                         )
-                    }
-                    Screen.Dashboard -> {
+                    }                    Screen.Dashboard -> {
                         DashboardScreen(
                             viewModel = dashboardViewModel,
                             onNodeClick = { nodeId ->

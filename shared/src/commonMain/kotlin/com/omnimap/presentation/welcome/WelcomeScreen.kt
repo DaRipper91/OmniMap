@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,10 +22,21 @@ import androidx.compose.ui.unit.dp
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
-    onApiKeyEntered: (String) -> Unit
+    onConfigurationFinished: (String, String, String?) -> Unit
 ) {
     var step by remember { mutableStateOf(0) }
     var apiKey by remember { mutableStateOf("") }
+    var selectedModel by remember { mutableStateOf("gemini-1.5-pro") }
+    var baseUrl by remember { mutableStateOf("https://api.openai.com/v1/") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val models = listOf(
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "llama3",
+        "llama3.1",
+        "qwen2.5"
+    )
 
     val steps = listOf(
         OnboardingStep(
@@ -34,17 +46,17 @@ fun WelcomeScreen(
         ),
         OnboardingStep(
             title = "AI-Powered Flow",
-            description = "The OmniMap Architect (Gemini) doesn't just chat—it builds. It proposes real-time mutations to your graph as you dialogue with it.",
+            description = "The OmniMap Architect doesn't just chat—it builds. It proposes real-time mutations to your graph as you dialogue with it.",
             icon = Icons.Filled.Hub
         ),
         OnboardingStep(
-            title = "Tactile Precision",
-            description = "Optimized for 120Hz native performance. Drag, connect, and feel your mind-map snap into place with physical haptic feedback.",
-            icon = Icons.Filled.Vibration
+            title = "Model Selection",
+            description = "Choose the brain for your OmniMap. We support Gemini, Llama, and Qwen.",
+            icon = Icons.Filled.Psychology
         ),
         OnboardingStep(
             title = "Intelligence Setup",
-            description = "To enable AI features, enter your Gemini API key. It's stored locally and never leaves your device.",
+            description = "Enter your API key and configuration. Your data stays local and private.",
             icon = Icons.Filled.Key,
             isLast = true
         )
@@ -87,28 +99,56 @@ fun WelcomeScreen(
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         
+        if (step == 2) {
+            Spacer(modifier = Modifier.height(32.dp))
+            Box {
+                OutlinedButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Model: $selectedModel")
+                }
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    models.forEach { model ->
+                        DropdownMenuItem(
+                            text = { Text(model) },
+                            onClick = {
+                                selectedModel = model
+                                expanded = false
+                                if (model.startsWith("gemini")) {
+                                    baseUrl = ""
+                                } else if (baseUrl.isBlank() || baseUrl.contains("google")) {
+                                    baseUrl = "http://100.115.141.124:4891/v1/" // Default local bridge
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
         if (currentStep.isLast) {
             Spacer(modifier = Modifier.height(32.dp))
+            
+            if (!selectedModel.startsWith("gemini")) {
+                OutlinedTextField(
+                    value = baseUrl,
+                    onValueChange = { baseUrl = it },
+                    label = { Text("Base URL (OpenAI Compatible)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             OutlinedTextField(
                 value = apiKey,
                 onValueChange = { apiKey = it },
-                label = { Text("Gemini API Key") },
-                placeholder = { Text("Paste your API key here...") },
+                label = { Text("API Key") },
+                placeholder = { Text("Paste your key here...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },
-                colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                    focusedLabelColor = MaterialTheme.colorScheme.primary,
-                    cursorColor = MaterialTheme.colorScheme.primary
-                )
-            )
-            Text(
-                text = "Get one for free at ai.google.dev",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                modifier = Modifier.padding(top = 8.dp).clickable { /* Open Browser TODO */ }
+                leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) }
             )
         }
         
@@ -133,7 +173,7 @@ fun WelcomeScreen(
         Button(
             onClick = {
                 if (currentStep.isLast) {
-                    if (apiKey.isNotBlank()) onApiKeyEntered(apiKey)
+                    if (apiKey.isNotBlank()) onConfigurationFinished(apiKey, selectedModel, baseUrl.takeIf { it.isNotBlank() })
                 } else {
                     step++
                 }
@@ -161,6 +201,7 @@ fun WelcomeScreen(
             }
         }
     }
+}
 }
 
 private data class OnboardingStep(

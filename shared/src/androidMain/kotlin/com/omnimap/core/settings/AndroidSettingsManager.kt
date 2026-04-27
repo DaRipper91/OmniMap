@@ -25,6 +25,36 @@ class AndroidSettingsManager(context: Context) : SettingsManager {
         prefs.edit().putString("gemini_api_key", key).apply()
     }
 
+    override fun getSelectedModel(): Flow<String> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "selected_model") {
+                trySend(p.getString(key, "gemini-1.5-pro")!!)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString("selected_model", "gemini-1.5-pro")!!)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun saveSelectedModel(model: String) {
+        prefs.edit().putString("selected_model", model).apply()
+    }
+
+    override fun getBaseUrl(): Flow<String?> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
+            if (key == "base_url") {
+                trySend(p.getString(key, null))
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(prefs.getString("base_url", null))
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
+    override suspend fun saveBaseUrl(url: String?) {
+        prefs.edit().putString("base_url", url).apply()
+    }
+
     override fun isFirstLaunch(): Flow<Boolean> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
             if (key == "first_launch") {
