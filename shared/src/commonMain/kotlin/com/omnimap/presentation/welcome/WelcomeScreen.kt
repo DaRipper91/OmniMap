@@ -28,19 +28,21 @@ fun WelcomeScreen(
 ) {
     var step by remember { mutableStateOf(0) }
     var apiKey by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("gemini-1.5-pro") }
+    var selectedModel by remember { mutableStateOf("gemini-3.1-pro") }
+    var customModelName by remember { mutableStateOf("") }
     var baseUrl by remember { mutableStateOf("https://api.openai.com/v1/") }
     var expanded by remember { mutableStateOf(false) }
+    var isCustomModelSelected by remember { mutableStateOf(false) }
 
     val models = listOf(
-        "gemini-1.5-pro",
-        "gemini-1.5-flash",
+        "gemini-3.1-pro",
+        "gemini-3.1-flash",
+        "gemini-3.1-flash-lite",
         "gemini-2.5-pro",
-        "gemini-3",
-        "gemini-3-pro",
-        "llama3",
+        "gemini-2.5-flash",
         "llama3.1",
-        "qwen2.5"
+        "qwen2.5",
+        "Custom..."
     )
 
     val steps = listOf(
@@ -51,7 +53,7 @@ fun WelcomeScreen(
         ),
         OnboardingStep(
             title = "The AI Architect",
-            description = "Choose between Gemini 2.5/3, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
+            description = "Choose between Gemini 3.1, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
             icon = Icons.Filled.Psychology
         ),
         OnboardingStep(
@@ -122,16 +124,23 @@ fun WelcomeScreen(
                     onClick = { expanded = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Model: $selectedModel")
+                    Text("Model: ${if (isCustomModelSelected) "Custom" else selectedModel}")
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     models.forEach { model ->
                         DropdownMenuItem(
                             text = { Text(model) },
                             onClick = {
-                                selectedModel = model
+                                if (model == "Custom...") {
+                                    isCustomModelSelected = true
+                                } else {
+                                    isCustomModelSelected = false
+                                    selectedModel = model
+                                }
                                 expanded = false
-                                if (model.startsWith("gemini")) {
+                                
+                                val modelToUse = if (isCustomModelSelected) customModelName else model
+                                if (modelToUse.startsWith("gemini")) {
                                     baseUrl = ""
                                 } else if (baseUrl.isBlank() || baseUrl.contains("google")) {
                                     baseUrl = "http://100.115.141.124:4891/v1/" // Default local bridge
@@ -142,9 +151,25 @@ fun WelcomeScreen(
                 }
             }
 
+            if (isCustomModelSelected) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = customModelName,
+                    onValueChange = { customModelName = it },
+                    label = { Text("Custom Model Name (e.g. gemini-3.1-pro)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
-            if (!selectedModel.startsWith("gemini")) {
+            val currentEffectiveModel = if (isCustomModelSelected) customModelName else selectedModel
+            if (!currentEffectiveModel.startsWith("gemini")) {
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = { baseUrl = it },
@@ -195,7 +220,10 @@ fun WelcomeScreen(
         Button(
             onClick = {
                 if (currentStep.isLast) {
-                    if (apiKey.isNotBlank()) onConfigurationFinished(apiKey, selectedModel, baseUrl.takeIf { it.isNotBlank() })
+                    val finalModel = if (isCustomModelSelected) customModelName else selectedModel
+                    if (apiKey.isNotBlank() && finalModel.isNotBlank()) {
+                        onConfigurationFinished(apiKey, finalModel, baseUrl.takeIf { it.isNotBlank() })
+                    }
                 } else {
                     step++
                 }
@@ -206,7 +234,7 @@ fun WelcomeScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            enabled = !currentStep.isLast || apiKey.isNotBlank()
+            enabled = !currentStep.isLast || (apiKey.isNotBlank() && (!isCustomModelSelected || customModelName.isNotBlank()))
         ) {
             Text(
                 if (currentStep.isLast) "Initialize Mind-Map" else "Next",
