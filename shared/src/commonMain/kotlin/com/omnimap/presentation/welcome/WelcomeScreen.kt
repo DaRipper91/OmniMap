@@ -35,6 +35,9 @@ fun WelcomeScreen(
     val models = listOf(
         "gemini-1.5-pro",
         "gemini-1.5-flash",
+        "gemini-2.5-pro",
+        "gemini-3",
+        "gemini-3-pro",
         "llama3",
         "llama3.1",
         "qwen2.5"
@@ -48,7 +51,7 @@ fun WelcomeScreen(
         ),
         OnboardingStep(
             title = "The AI Architect",
-            description = "Choose between Gemini 1.5, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
+            description = "Choose between Gemini 2.5/3, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
             icon = Icons.Filled.Psychology
         ),
         OnboardingStep(
