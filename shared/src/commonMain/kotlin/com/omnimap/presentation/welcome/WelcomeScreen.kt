@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
@@ -41,22 +43,32 @@ fun WelcomeScreen(
     val steps = listOf(
         OnboardingStep(
             title = "Your Mind, Visualized",
-            description = "OmniMap is a high-performance execution control plane for your thoughts. Capture ideas, tasks, and goals in a native, tactile graph.",
+            description = "OmniMap transforms your fleeting thoughts into a persistent, native graph. Capture ideas, tasks, and complex goals with sub-millisecond tactile precision.",
             icon = Icons.Filled.AutoAwesome
         ),
         OnboardingStep(
-            title = "AI-Powered Flow",
-            description = "The OmniMap Architect doesn't just chat—it builds. It proposes real-time mutations to your graph as you dialogue with it.",
-            icon = Icons.Filled.Hub
-        ),
-        OnboardingStep(
-            title = "Model Selection",
-            description = "Choose the brain for your OmniMap. We support Gemini, Llama, and Qwen.",
+            title = "The AI Architect",
+            description = "Choose between Gemini 1.5, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
             icon = Icons.Filled.Psychology
         ),
         OnboardingStep(
+            title = "Graph Mutations",
+            description = "Experience real-time evolution. As you dialogue with the Architect, it drafts new nodes and connections, effectively building your workspace alongside you.",
+            icon = Icons.Filled.Draw
+        ),
+        OnboardingStep(
+            title = "Tactile Hardware Engine",
+            description = "Optimized for 120Hz native execution. Feel every connection with deep haptic feedback integration, designed for immediate cognitive flow.",
+            icon = Icons.Filled.Vibration
+        ),
+        OnboardingStep(
+            title = "Privacy by Design",
+            description = "Your graph data stays in a local Room database. Your API keys are stored only on this device. Total control, zero telemetry.",
+            icon = Icons.Filled.Lock
+        ),
+        OnboardingStep(
             title = "Intelligence Setup",
-            description = "Enter your API key and configuration. Your data stays local and private.",
+            description = "Select your preferred brain and enter your API key to initialize the Mind-Map engine.",
             icon = Icons.Filled.Key,
             isLast = true
         )
@@ -99,8 +111,9 @@ fun WelcomeScreen(
             modifier = Modifier.padding(horizontal = 8.dp)
         )
         
-        if (step == 2) {
+        if (currentStep.isLast) {
             Spacer(modifier = Modifier.height(32.dp))
+            
             Box {
                 OutlinedButton(
                     onClick = { expanded = true },
@@ -125,18 +138,20 @@ fun WelcomeScreen(
                     }
                 }
             }
-        }
 
-        if (currentStep.isLast) {
-            Spacer(modifier = Modifier.height(32.dp))
-            
+            Spacer(modifier = Modifier.height(16.dp))
+
             if (!selectedModel.startsWith("gemini")) {
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = { baseUrl = it },
                     label = { Text("Base URL (OpenAI Compatible)") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -148,7 +163,11 @@ fun WelcomeScreen(
                 placeholder = { Text("Paste your key here...") },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) }
+                leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         }
         
@@ -201,7 +220,6 @@ fun WelcomeScreen(
             }
         }
     }
-}
 }
 
 private data class OnboardingStep(
