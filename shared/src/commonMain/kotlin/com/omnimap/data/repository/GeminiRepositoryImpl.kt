@@ -1,8 +1,9 @@
 package com.omnimap.data.repository
 
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
+import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
+import dev.shreyaspatil.ai.client.generativeai.type.generationConfig
 import com.omnimap.core.settings.SettingsManager
+import com.omnimap.core.util.OmniLogger
 import com.omnimap.domain.repository.AiInferenceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,7 @@ class GeminiRepositoryImpl(
     private val settingsManager: SettingsManager
 ) : AiInferenceRepository {
 
+    private val TAG = "GeminiRepository"
     private val modelFlow = MutableStateFlow<GenerativeModel?>(createModel(apiKey, selectedModel))
     private val scope = CoroutineScope(Dispatchers.Main)
 
@@ -23,6 +25,7 @@ class GeminiRepositoryImpl(
         settingsManager.getGeminiApiKey()
             .onEach { newKey ->
                 if (newKey != null && newKey != apiKey) {
+                    OmniLogger.d(TAG, "API Key updated")
                     apiKey = newKey
                     modelFlow.value = createModel(newKey, selectedModel)
                 }
@@ -32,6 +35,7 @@ class GeminiRepositoryImpl(
         settingsManager.getSelectedModel()
             .onEach { newModel ->
                 if (newModel != selectedModel && newModel.startsWith("gemini")) {
+                    OmniLogger.d(TAG, "Model updated to: $newModel")
                     selectedModel = newModel
                     modelFlow.value = createModel(apiKey, newModel)
                 }
@@ -41,8 +45,10 @@ class GeminiRepositoryImpl(
 
     private fun createModel(key: String, modelName: String): GenerativeModel? {
         return if (key.isBlank() || key.startsWith("REPLACE_WITH") || key == "dummy_key_for_build") {
+            OmniLogger.d(TAG, "Model creation skipped: Invalid API Key")
             null
         } else {
+            OmniLogger.d(TAG, "Creating model: $modelName")
             GenerativeModel(
                 modelName = modelName,
                 apiKey = key,
@@ -70,11 +76,19 @@ class GeminiRepositoryImpl(
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> {
         val currentModel = modelFlow.value ?: return Result.failure(Exception("Gemini API Key not configured. Please use the setup wizard."))
         
+        OmniLogger.d(TAG, "Generating suggestion with model: $selectedModel")
         return try {
             val response = currentModel.generateContent(contextPrompt)
-            val text = response.text ?: return Result.failure(Exception("Empty response from Gemini"))
-            Result.success(text)
+            val text = response.text
+            if (text == null) {
+                OmniLogger.e(TAG, "Empty response from Gemini")
+                Result.failure(Exception("Empty response from Gemini"))
+            } else {
+                OmniLogger.d(TAG, "Suggestion generated successfully")
+                Result.success(text)
+            }
         } catch (e: Exception) {
+            OmniLogger.e(TAG, "Error generating suggestion: ${e.message}", e)
             Result.failure(e)
         }
     }

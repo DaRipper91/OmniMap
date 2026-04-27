@@ -36,8 +36,8 @@ kotlin {
                 implementation("com.squareup.retrofit2:retrofit:2.11.0")
                 implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
-                // Gemini SDK
-                implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+                // Gemini SDK (Official Multiplatform)
+                implementation("dev.shreyaspatil.generativeai:generativeai-google:0.9.0-1.1.0")
 
                 // Common annotations for Room (KMP compatible)
                 implementation("androidx.room:room-common:2.6.1")
