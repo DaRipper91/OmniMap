@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -42,18 +45,28 @@ jobs:
       - name: Grant Execute Permissions for gradlew
         run: chmod +x gradlew
 
-      - name: List Projects (Debug)
-        run: ./gradlew projects
-
       - name: Build Android APK
         run: |
           ./gradlew :androidApp:assembleDebug -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
+
+      - name: Find APK
+        run: |
+          # Find the actual APK path and set it as an env var
+          APK_PATH=$(find androidApp/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+          echo "Found APK at: $APK_PATH"
 
       - name: Get Version Name
         id: version
         run: |
           VERSION=$(grep "versionName =" androidApp/build.gradle.kts | awk -F'"' '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: OmniMap-Android-Debug
+          path: ${{ env.APK_PATH }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -63,6 +76,6 @@ jobs:
           name: Release v${{ env.VERSION }} (Build ${{ github.run_number }})
           draft: false
           prerelease: false
-          files: androidApp/build/outputs/apk/debug/androidApp-debug.apk
+          files: ${{ env.APK_PATH }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
