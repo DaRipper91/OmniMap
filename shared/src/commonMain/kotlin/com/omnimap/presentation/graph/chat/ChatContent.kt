@@ -39,7 +39,7 @@ fun ChatContent(
     ) {
         Text(
             text = contextTitle,
-            color = Color(0xFFD0BCFF), // Primary
+            color = MaterialTheme.colorScheme.primary,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
@@ -51,17 +51,17 @@ fun ChatContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp)
-                    .background(Color(0x33FFFF00), RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "${state.queuedRequests.size} requests queued.",
-                    color = Color.Yellow,
+                    color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onRetryClicked) {
-                    Text("Retry", color = Color.Yellow)
+                    Text("Retry", color = MaterialTheme.colorScheme.tertiary)
                 }
             }
         }
@@ -75,13 +75,14 @@ fun ChatContent(
         ) {
             if (state.isAiThinking) {
                 item {
-                    Text("Architect is thinking...", color = Color.Gray, modifier = Modifier.padding(8.dp))
+                    Text("Architect is thinking...", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), modifier = Modifier.padding(8.dp))
                 }
             }
 
             items(state.chatHistory.reversed()) { msg ->
                 val align = if (msg.isFromUser) Alignment.CenterEnd else Alignment.CenterStart
-                val bg = if (msg.isFromUser) Color(0xFF4A4458) else Color(0xFF1D1B20)
+                val bg = if (msg.isFromUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                val textColor = if (msg.isFromUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
                 
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = align) {
                     Box(
@@ -90,7 +91,7 @@ fun ChatContent(
                             .background(bg, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
-                        Text(text = msg.text, color = Color.White)
+                        Text(text = msg.text, color = textColor)
                     }
                 }
             }
@@ -106,10 +107,10 @@ fun ChatContent(
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Instruct the architect...") },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFF1D1B20),
-                    unfocusedContainerColor = Color(0xFF1D1B20),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 shape = RoundedCornerShape(24.dp)
             )
@@ -122,7 +123,7 @@ fun ChatContent(
                 },
                 modifier = Modifier.padding(start = 8.dp)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color(0xFFD0BCFF))
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)
             }
         }
     }

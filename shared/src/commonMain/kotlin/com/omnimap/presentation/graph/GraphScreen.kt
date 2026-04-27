@@ -38,7 +38,7 @@ fun GraphScreen(viewModel: GraphViewModel) {
                 IntelligentBottomSheet(viewModel = viewModel, state = state)
             },
             sheetPeekHeight = 64.dp,
-            sheetContainerColor = Color(0xFF2B2930), // MD3 Surface Container High
+            sheetContainerColor = MaterialTheme.colorScheme.surfaceVariant,
             content = { innerPadding ->
                 Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
                     // The main canvas
@@ -53,8 +53,8 @@ fun GraphScreen(viewModel: GraphViewModel) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 16.dp, bottom = 80.dp), // Padding to avoid overlap with sheet
-            containerColor = Color(0xFFD0BCFF),
-            contentColor = Color(0xFF381E72)
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
         ) {
             Icon(Icons.Filled.Add, contentDescription = "Add Node")
         }
@@ -65,21 +65,21 @@ fun GraphScreen(viewModel: GraphViewModel) {
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 16.dp)
-                    .background(Color(0xFF1C1B1F).copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = state.nodes[state.selectedNodeId]?.title ?: "",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(end = 16.dp)
                 )
                 IconButton(onClick = { viewModel.processIntent(GraphIntent.OnEditNodeRequest(state.selectedNodeId)) }) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Edit Node", tint = Color(0xFFD0BCFF))
+                    Icon(Icons.Filled.Edit, contentDescription = "Edit Node", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = { viewModel.processIntent(GraphIntent.OnNodeDeleted(state.selectedNodeId!!)) }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete Node", tint = Color(0xFFF2B8B5)) // Error color
+                    Icon(Icons.Filled.Delete, contentDescription = "Delete Node", tint = MaterialTheme.colorScheme.error)
                 }
             }
         }

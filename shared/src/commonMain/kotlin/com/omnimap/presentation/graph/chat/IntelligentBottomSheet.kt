@@ -17,7 +17,7 @@ fun IntelligentBottomSheet(viewModel: GraphViewModel, state: GraphState) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 200.dp, max = 500.dp)
-            .background(Color(0xFF2B2930)) // Surface Container High
+            .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         ChatContent(
             state = state,

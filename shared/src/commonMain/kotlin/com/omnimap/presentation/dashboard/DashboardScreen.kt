@@ -63,7 +63,7 @@ fun DashboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF141218)) // MD3 Background Dark
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
     ) {
         Row(
@@ -73,17 +73,17 @@ fun DashboardScreen(
         ) {
             Text(
                 text = "OmniMap",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
             
             Row {
                 IconButton(onClick = { importLauncher.launch(arrayOf("application/json")) }) {
-                    Icon(Icons.Filled.Upload, contentDescription = "Import JSON", tint = Color(0xFFD0BCFF))
+                    Icon(Icons.Filled.Upload, contentDescription = "Import JSON", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = { viewModel.exportGraph() }) {
-                    Icon(Icons.Filled.Download, contentDescription = "Export JSON", tint = Color(0xFFD0BCFF))
+                    Icon(Icons.Filled.Download, contentDescription = "Export JSON", tint = MaterialTheme.colorScheme.primary)
                 }
             }
         }
@@ -99,7 +99,7 @@ fun DashboardScreen(
             leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
             modifier = Modifier.fillMaxWidth(),
             colors = SearchBarDefaults.colors(
-                containerColor = Color(0xFF1C1B1F) // MD3 Surface
+                containerColor = MaterialTheme.colorScheme.surface
             )
         ) { }
 
@@ -108,7 +108,7 @@ fun DashboardScreen(
         if (results.isNotEmpty()) {
             Text(
                 text = "Search Results",
-                color = Color(0xFFD0BCFF),
+                color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -121,13 +121,17 @@ fun DashboardScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onNodeClick(node.id) },
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF2B2930)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text(text = node.title, color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(text = node.title, color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
                             if (node.description.isNotBlank()) {
-                                Text(text = node.description, color = Color.LightGray, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = node.description, 
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f), 
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
                     }
@@ -135,12 +139,12 @@ fun DashboardScreen(
             }
         } else if (query.isNotBlank()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No nodes found matching your query.", color = Color.Gray)
+                Text("No nodes found matching your query.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
             }
         } else {
             // Dashboard placeholder content
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Start typing to search your graph globally.", color = Color.DarkGray)
+                Text("Start typing to search your graph globally.", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.3f))
             }
         }
     }

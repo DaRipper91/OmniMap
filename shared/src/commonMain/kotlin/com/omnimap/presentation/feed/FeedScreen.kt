@@ -18,13 +18,13 @@ fun FeedScreen(viewModel: GraphViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF141218)) // MD3 Background Dark
+            .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
             .statusBarsPadding()
     ) {
         Text(
             text = "Live Intelligence Feed",
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(bottom = 16.dp)
         )

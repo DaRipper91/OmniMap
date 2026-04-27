@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.material3.MaterialTheme
 import com.omnimap.presentation.graph.GraphIntent
 import com.omnimap.presentation.graph.GraphViewModel
 
@@ -21,7 +22,7 @@ fun OmniMapCanvas(viewModel: GraphViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF141218)) // MD3 Background Dark
+            .background(MaterialTheme.colorScheme.background)
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = {

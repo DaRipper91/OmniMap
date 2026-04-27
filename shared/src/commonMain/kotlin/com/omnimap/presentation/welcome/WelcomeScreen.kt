@@ -55,7 +55,7 @@ fun WelcomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF141218))
+            .background(MaterialTheme.colorScheme.background)
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -63,7 +63,7 @@ fun WelcomeScreen(
         Icon(
             imageVector = currentStep.icon,
             contentDescription = null,
-            tint = Color(0xFFD0BCFF),
+            tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(100.dp)
         )
         
@@ -72,7 +72,7 @@ fun WelcomeScreen(
         Text(
             text = currentStep.title,
             style = MaterialTheme.typography.headlineMedium,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -82,7 +82,7 @@ fun WelcomeScreen(
         Text(
             text = currentStep.description,
             style = MaterialTheme.typography.bodyLarge,
-            color = Color.LightGray,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 8.dp)
         )
@@ -98,16 +98,16 @@ fun WelcomeScreen(
                 shape = RoundedCornerShape(16.dp),
                 leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },
                 colors = TextFieldDefaults.outlinedTextFieldColors(
-                    focusedBorderColor = Color(0xFFD0BCFF),
-                    unfocusedBorderColor = Color.Gray,
-                    focusedLabelColor = Color(0xFFD0BCFF),
-                    cursorColor = Color(0xFFD0BCFF)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 )
             )
             Text(
                 text = "Get one for free at ai.google.dev",
                 style = MaterialTheme.typography.bodySmall,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
                 modifier = Modifier.padding(top = 8.dp).clickable { /* Open Browser TODO */ }
             )
         }
@@ -121,7 +121,7 @@ fun WelcomeScreen(
                     modifier = Modifier
                         .size(if (index == step) 12.dp else 8.dp)
                         .background(
-                            if (index == step) Color(0xFFD0BCFF) else Color.Gray,
+                            if (index == step) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                             RoundedCornerShape(50)
                         )
                 )
@@ -141,8 +141,8 @@ fun WelcomeScreen(
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = RoundedCornerShape(16.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFFD0BCFF),
-                contentColor = Color(0xFF381E72)
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ),
             enabled = !currentStep.isLast || apiKey.isNotBlank()
         ) {
@@ -157,7 +157,7 @@ fun WelcomeScreen(
                 onClick = { step-- },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text("Back", color = Color.Gray)
+                Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
             }
         }
     }

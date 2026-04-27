@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.material3.MaterialTheme
 import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.Node
 
@@ -15,6 +16,7 @@ fun EdgeComposable(
     edges: List<Edge>,
     nodes: Map<String, Node>
 ) {
+    val edgeColor = MaterialTheme.colorScheme.outlineVariant
     Canvas(modifier = Modifier.fillMaxSize()) {
         edges.forEach { edge ->
             val sourceNode = nodes[edge.sourceId]
@@ -26,7 +28,7 @@ fun EdgeComposable(
                 val targetOffset = Offset(targetNode.x + 200f, targetNode.y + 100f)
 
                 drawLine(
-                    color = Color(0xFF49454F), // MD3 Outline color variant
+                    color = edgeColor,
                     start = sourceOffset,
                     end = targetOffset,
                     strokeWidth = 6f,
