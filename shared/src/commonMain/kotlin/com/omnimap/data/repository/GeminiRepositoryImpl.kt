@@ -1,7 +1,7 @@
 package com.omnimap.data.repository
 
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
+import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
+import dev.shreyaspatil.ai.client.generativeai.type.generationConfig
 import com.omnimap.core.settings.SettingsManager
 import com.omnimap.core.util.OmniLogger
 import com.omnimap.domain.repository.AiInferenceRepository
