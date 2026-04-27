@@ -23,23 +23,23 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Create local.properties
         run: |
-          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > local.properties
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> local.properties
+          # Also create it in androidApp just in case
+          mkdir -p androidApp
+          cp local.properties androidApp/local.properties
 
       - name: Grant Execute Permissions for gradlew
         run: chmod +x gradlew
 
       - name: Build Android APK
-        run: ./gradlew :androidApp:app:assembleDebug
+        run: ./gradlew :androidApp:app:assembleDebug -Pkotlin.mpp.androidGradlePluginCompatibility.nowarn=true
 
       - name: Get Version Name
         id: version
         run: |
-          # Simple extraction of versionName from build.gradle.kts
           VERSION=$(grep "versionName =" androidApp/app/build.gradle.kts | awk -F'"' '{print $2}')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
