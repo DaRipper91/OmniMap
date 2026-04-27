@@ -4,7 +4,26 @@
             "outputFile": "com.omnimap.app-mergeDebugResources-48:/values-v16/values-v16.xml",
             "map": [
                 {
-                    "source": "/home/daripper/.gradle/caches/9.3.1/transforms/cf228fbffa90773c17f5d7cf4ce7ed32/transformed/core-1.12.0/res/values-v16/values-v16.xml",
+                    "source": "/home/daripper/.gradle/caches/transforms-4/f8f4ee91ffdbddd390d0fef6ca55b700/transformed/appcompat-1.6.1/res/values-v16/values-v16.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "5",
+                        "endColumns": "12",
+                        "endOffsets": "223"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "121",
+                        "endLines": "6",
+                        "endColumns": "12",
+                        "endOffsets": "289"
+                    }
+                },
+                {
+                    "source": "/home/daripper/.gradle/caches/transforms-4/53c22d5bcfb4a6a242bc06dea0f8dcdf/transformed/core-1.12.0/res/values-v16/values-v16.xml",
                     "from": {
                         "startLines": "2",
                         "startColumns": "4",

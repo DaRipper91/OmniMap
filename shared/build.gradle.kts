@@ -31,12 +31,24 @@ kotlin {
                 implementation(compose.materialIconsExtended)
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
                 implementation("com.google.code.gson:gson:2.11.0")
+
+                // Retrofit (JVM/Android only, but shared here)
+                implementation("com.squareup.retrofit2:retrofit:2.11.0")
+                implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+                // Gemini SDK
+                implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
+
+                // Common annotations for Room (KMP compatible)
+                implementation("androidx.room:room-common:2.6.1")
+                // Multiplatform Lifecycle
+                implementation("androidx.lifecycle:lifecycle-viewmodel:2.8.0")
             }
         }
         val androidMain by getting {
             dependencies {
                 api("androidx.activity:activity-compose:1.8.2")
-                api("androidx.appcompat:androidx.appcompat:1.6.1")
+                api("androidx.appcompat:appcompat:1.6.1")
                 api("androidx.core:core-ktx:1.12.0")
                 
                 // Room
@@ -56,6 +68,7 @@ kotlin {
 android {
     namespace = "com.omnimap.shared"
     compileSdk = 34
+    buildToolsVersion = "34.0.0"
     defaultConfig {
         minSdk = 26
     }

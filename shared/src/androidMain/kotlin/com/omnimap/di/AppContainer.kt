@@ -2,6 +2,8 @@ package com.omnimap.di
 
 import android.content.Context
 import androidx.room.Room
+import com.omnimap.core.connectivity.ConnectivityObserver
+import com.omnimap.core.connectivity.NetworkConnectivityObserver
 import com.omnimap.core.haptics.AndroidHapticEngine
 import com.omnimap.core.haptics.HapticEngine
 import com.omnimap.data.local.db.OmniMapDatabase
@@ -26,6 +28,10 @@ class AppContainer(private val context: Context) {
         AndroidHapticEngine(context)
     }
 
+    val connectivityObserver: ConnectivityObserver by lazy {
+        NetworkConnectivityObserver(context)
+    }
+
     val ollamaApi: OllamaApi by lazy {
         Retrofit.Builder()
             // Default IP pointing to the local gpt4all/ollama bridge as defined in ARCH_LIVE_INTELLIGENCE.md
@@ -38,7 +44,8 @@ class AppContainer(private val context: Context) {
     val omniMapRepository: OmniMapRepository by lazy {
         OmniMapRepositoryImpl(
             nodeDao = database.nodeDao(),
-            edgeDao = database.edgeDao()
+            edgeDao = database.edgeDao(),
+            queuedAiRequestDao = database.queuedAiRequestDao()
         )
     }
 

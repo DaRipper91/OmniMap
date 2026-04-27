@@ -2,6 +2,7 @@ package com.omnimap.domain.repository
 
 import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.Node
+import com.omnimap.domain.model.QueuedAiRequest
 import kotlinx.coroutines.flow.Flow
 
 interface OmniMapRepository {
@@ -21,6 +22,10 @@ interface OmniMapRepository {
     suspend fun insertEdge(edge: Edge)
     suspend fun updateEdge(edge: Edge)
     suspend fun deleteEdge(edge: Edge)
+
+    fun getQueuedAiRequests(): Flow<List<QueuedAiRequest>>
+    suspend fun insertQueuedAiRequest(request: QueuedAiRequest)
+    suspend fun deleteQueuedAiRequest(id: String)
 
     suspend fun exportGraphToJson(): String
     suspend fun importGraphFromJson(json: String): Result<Unit>

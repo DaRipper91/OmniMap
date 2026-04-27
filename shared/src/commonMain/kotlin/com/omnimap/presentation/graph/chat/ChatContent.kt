@@ -20,6 +20,7 @@ import com.omnimap.presentation.graph.GraphState
 fun ChatContent(
     state: GraphState,
     onPromptSubmitted: (String) -> Unit,
+    onRetryClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var promptText by remember { mutableStateOf("") }
@@ -43,6 +44,27 @@ fun ChatContent(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 8.dp)
         )
+
+        if (state.queuedRequests.isNotEmpty()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp)
+                    .background(Color(0x33FFFF00), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 12.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = "${state.queuedRequests.size} requests queued.",
+                    color = Color.Yellow,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = onRetryClicked) {
+                    Text("Retry", color = Color.Yellow)
+                }
+            }
+        }
 
         // Chat History
         LazyColumn(

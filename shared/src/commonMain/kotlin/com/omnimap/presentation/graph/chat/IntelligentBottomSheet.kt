@@ -23,6 +23,9 @@ fun IntelligentBottomSheet(viewModel: GraphViewModel, state: GraphState) {
             state = state,
             onPromptSubmitted = { prompt -> 
                 viewModel.processIntent(GraphIntent.OnSubmitPrompt(prompt)) 
+            },
+            onRetryClicked = {
+                viewModel.processIntent(GraphIntent.RetryQueuedRequests)
             }
         )
     }

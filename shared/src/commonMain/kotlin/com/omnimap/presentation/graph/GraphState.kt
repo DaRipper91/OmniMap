@@ -2,11 +2,13 @@ package com.omnimap.presentation.graph
 
 import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.Node
+import com.omnimap.domain.model.QueuedAiRequest
 import com.omnimap.presentation.graph.chat.ChatMessage
 
 data class GraphState(
     val nodes: Map<String, Node> = emptyMap(),
     val edges: List<Edge> = emptyList(),
+    val queuedRequests: List<QueuedAiRequest> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
     val selectedNodeId: String? = null,

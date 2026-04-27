@@ -15,4 +15,5 @@ sealed class GraphIntent {
     data class OnEditNodeRequest(val id: String?) : GraphIntent()
     data class OnNodeUpdated(val id: String, val newTitle: String, val newDescription: String) : GraphIntent()
     data class OnCreateNodeRequest(val show: Boolean) : GraphIntent()
+    object RetryQueuedRequests : GraphIntent()
 }

@@ -2,6 +2,7 @@ package com.omnimap.data.repository
 
 import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.Node
+import com.omnimap.domain.model.QueuedAiRequest
 import com.omnimap.domain.repository.OmniMapRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,7 @@ import kotlinx.coroutines.flow.map
 class MockOmniMapRepository : OmniMapRepository {
     private val nodes = MutableStateFlow<Map<String, Node>>(emptyMap())
     private val edges = MutableStateFlow<List<Edge>>(emptyList())
+    private val queuedRequests = MutableStateFlow<List<QueuedAiRequest>>(emptyList())
 
     override fun getAllNodes(): Flow<List<Node>> = nodes.map { it.values.toList() }
     override fun getNodeById(id: String): Flow<Node?> = nodes.map { it[id] }
@@ -50,6 +52,16 @@ class MockOmniMapRepository : OmniMapRepository {
     }
     override suspend fun deleteEdge(edge: Edge) {
         edges.value = edges.value.filter { it.id != edge.id }
+    }
+
+    override fun getQueuedAiRequests(): Flow<List<QueuedAiRequest>> = queuedRequests
+
+    override suspend fun insertQueuedAiRequest(request: QueuedAiRequest) {
+        queuedRequests.value = queuedRequests.value + request
+    }
+
+    override suspend fun deleteQueuedAiRequest(id: String) {
+        queuedRequests.value = queuedRequests.value.filter { it.id != id }
     }
 
     override suspend fun exportGraphToJson(): String = "{}"

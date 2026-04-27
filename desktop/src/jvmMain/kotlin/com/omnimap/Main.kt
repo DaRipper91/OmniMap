@@ -14,7 +14,8 @@ fun main() = application {
         GraphViewModel(
             repository = container.omniMapRepository,
             hapticEngine = container.hapticEngine,
-            aiRepository = container.aiInferenceRepository
+            aiRepository = container.aiInferenceRepository,
+            connectivityObserver = container.connectivityObserver
         )
     }
     val dashboardViewModel = remember {

@@ -3,15 +3,18 @@ package com.omnimap.data.repository
 import com.google.gson.Gson
 import com.omnimap.data.local.dao.EdgeDao
 import com.omnimap.data.local.dao.NodeDao
+import com.omnimap.data.local.dao.QueuedAiRequestDao
 import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.GraphExport
 import com.omnimap.domain.model.Node
+import com.omnimap.domain.model.QueuedAiRequest
 import com.omnimap.domain.repository.OmniMapRepository
 import kotlinx.coroutines.flow.Flow
 
 class OmniMapRepositoryImpl(
     private val nodeDao: NodeDao,
-    private val edgeDao: EdgeDao
+    private val edgeDao: EdgeDao,
+    private val queuedAiRequestDao: QueuedAiRequestDao
 ) : OmniMapRepository {
 
     private val gson = Gson()
@@ -45,6 +48,12 @@ class OmniMapRepositoryImpl(
     override suspend fun updateEdge(edge: Edge) = edgeDao.updateEdge(edge)
 
     override suspend fun deleteEdge(edge: Edge) = edgeDao.deleteEdge(edge)
+
+    override fun getQueuedAiRequests(): Flow<List<QueuedAiRequest>> = queuedAiRequestDao.getAllQueuedRequests()
+
+    override suspend fun insertQueuedAiRequest(request: QueuedAiRequest) = queuedAiRequestDao.insertRequest(request)
+
+    override suspend fun deleteQueuedAiRequest(id: String) = queuedAiRequestDao.deleteRequest(id)
 
     override suspend fun exportGraphToJson(): String {
         val nodes = nodeDao.getAllNodesSync()

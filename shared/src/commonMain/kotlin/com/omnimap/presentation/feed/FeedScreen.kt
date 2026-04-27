@@ -34,6 +34,9 @@ fun FeedScreen(viewModel: GraphViewModel) {
             onPromptSubmitted = { prompt -> 
                 viewModel.processIntent(GraphIntent.OnSubmitPrompt(prompt)) 
             },
+            onRetryClicked = {
+                viewModel.processIntent(GraphIntent.RetryQueuedRequests)
+            },
             modifier = Modifier.weight(1f)
         )
     }

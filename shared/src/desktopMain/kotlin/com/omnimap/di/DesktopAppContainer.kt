@@ -1,5 +1,7 @@
 package com.omnimap.di
 
+import com.omnimap.core.connectivity.ConnectivityObserver
+import com.omnimap.core.connectivity.DesktopConnectivityObserver
 import com.omnimap.core.haptics.DesktopHapticEngine
 import com.omnimap.core.haptics.HapticEngine
 import com.omnimap.data.repository.GeminiRepositoryImpl
@@ -10,6 +12,10 @@ import com.omnimap.domain.repository.OmniMapRepository
 class DesktopAppContainer {
     val hapticEngine: HapticEngine by lazy {
         DesktopHapticEngine()
+    }
+
+    val connectivityObserver: ConnectivityObserver by lazy {
+        DesktopConnectivityObserver()
     }
 
     val omniMapRepository: OmniMapRepository by lazy {
