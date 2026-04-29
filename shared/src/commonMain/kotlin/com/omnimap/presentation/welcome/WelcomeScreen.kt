@@ -32,7 +32,7 @@ fun WelcomeScreen(
 ) {
     var step by remember { mutableStateOf(0) }
     var apiKey by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("gemini-1.5-pro") }
+    var selectedModel by remember { mutableStateOf("gemini-3.1-pro") }
     val scope = rememberCoroutineScope()
     val currentUser by authRepository.currentUser.collectAsState()
     var customModelName by remember { mutableStateOf("") }
@@ -41,8 +41,8 @@ fun WelcomeScreen(
     var isCustomModelSelected by remember { mutableStateOf(false) }
 
     val models = listOf(
-        "gemini-1.5-pro-latest",
-        "gemini-1.5-flash-latest",
+        "gemini-3.1-pro",
+        "gemini-3.1-flash",
         "gemini-2.0-flash",
         "gemini-2.0-pro-exp",
         "llama3.1",

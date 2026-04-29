@@ -7,7 +7,7 @@ OmniMap is a high-performance, local-first, AI-writable graph of thoughts, tasks
 ## 🧠 Key Features
 
 - **Tactile Graph Canvas:** A physics-based mind-map engine optimized for 120Hz native execution.
-- **AI-Architect (Gemini):** Real-time graph mutations powered by Gemini 1.5 Pro. The AI builds your map with you.
+- **AI-Architect (Gemini):** Real-time graph mutations powered by Gemini 3.1 Pro. The AI builds your map with you.
 - **Local-First Privacy:** Data stays on your device in a robust Room database.
 - **Haptic Snap:** Feel your connections with deep hardware integration (Android).
 - **Universal Intelligence:** Setup wizard for easy Gemini API configuration without editing code.
@@ -38,7 +38,7 @@ OmniMap is a high-performance, local-first, AI-writable graph of thoughts, tasks
 - **Language:** Kotlin 2.0 (Multiplatform)
 - **UI:** Jetpack Compose / Compose Multiplatform
 - **Database:** Room (Android)
-- **Intelligence:** Google Gemini 1.5 Pro SDK
+- **Intelligence:** Google Gemini 3.1 Pro SDK
 - **Architecture:** MVVM + Clean Architecture
 
 ---

@@ -28,11 +28,11 @@ class AndroidSettingsManager(context: Context) : SettingsManager {
     override fun getSelectedModel(): Flow<String> = callbackFlow {
         val listener = SharedPreferences.OnSharedPreferenceChangeListener { p, key ->
             if (key == "selected_model") {
-                trySend(p.getString(key, "gemini-1.5-pro")!!)
+                trySend(p.getString(key, "gemini-3.1-pro")!!)
             }
         }
         prefs.registerOnSharedPreferenceChangeListener(listener)
-        trySend(prefs.getString("selected_model", "gemini-1.5-pro")!!)
+        trySend(prefs.getString("selected_model", "gemini-3.1-pro")!!)
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 

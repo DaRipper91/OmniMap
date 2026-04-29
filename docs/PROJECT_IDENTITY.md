@@ -9,7 +9,7 @@ OmniMap is a high-performance, native execution control plane for the human mind
 
 ## 🧠 Intelligence Engine
 - **Core Model:** `omnimap-architect` (Custom instructions for graph-native project planning).
-- **Runtime:** Pivot from local Ollama to **Google Gemini 1.5 Pro API** via official Android SDK for unified, high-bandwidth reasoning while maintaining local-first data integrity.
+- **Runtime:** Pivot from local Ollama to **Google Gemini 3.1 Pro API** via official Android SDK for unified, high-bandwidth reasoning while maintaining local-first data integrity.
 - **Output:** Structured JSON mutations for real-time graph evolution.
 
 ## 💎 Core Values

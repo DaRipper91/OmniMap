@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class DesktopSettingsManager : SettingsManager {
     private val _apiKey = MutableStateFlow<String?>(null)
-    private val _selectedModel = MutableStateFlow("gemini-1.5-pro")
+    private val _selectedModel = MutableStateFlow("gemini-3.1-pro")
     private val _baseUrl = MutableStateFlow<String?>(null)
     private val _firstLaunch = MutableStateFlow(true)
 

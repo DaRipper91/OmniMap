@@ -65,7 +65,7 @@ class AppContainer(private val context: Context) {
         object : AiInferenceRepository {
             private val geminiRepo = GeminiRepositoryImpl(
                 apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: "",
-                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro",
+                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro",
                 settingsManager = settingsManager
             )
             
@@ -77,7 +77,7 @@ class AppContainer(private val context: Context) {
             )
 
             private fun getActiveRepo(): AiInferenceRepository {
-                val model = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro"
+                val model = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro"
                 return if (model.startsWith("gemini")) geminiRepo else openAiRepo
             }
 
@@ -87,7 +87,7 @@ class AppContainer(private val context: Context) {
             override fun isConfigured(): Boolean = getActiveRepo().isConfigured()
             
             override fun getSelectedModel(): String = 
-                runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-1.5-pro"
+                runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro"
 
             override suspend fun saveConfiguration(apiKey: String, model: String, baseUrl: String?) {
                 settingsManager.saveGeminiApiKey(apiKey)

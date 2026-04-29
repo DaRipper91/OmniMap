@@ -10,7 +10,7 @@
 - **Graph Logic:** Custom Kotlin `GraphProcessor` optimized for O(log n) traversal.
 
 ## 🤖 Intelligence Layer
-- **Core Engine:** Google Gemini 1.5 Pro SDK (Official Android SDK).
+- **Core Engine:** Google Gemini 3.1 Pro SDK (Official Android SDK).
 - **Fallback/Hybrid:** Local Ollama (Pattern B) for offline-critical logic.
 - **Architect Model:** `omnimap-architect` (Principal persona enforcing structured JSON outputs).
 - **Mutation Pipeline:** Automatic JSON parsing in `GraphViewModel` translates AI architectural plans into real-time Room mutations.
