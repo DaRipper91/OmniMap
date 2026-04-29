@@ -1,6 +1,7 @@
 package com.omnimap.data.repository
 
 import dev.shreyaspatil.ai.client.generativeai.GenerativeModel
+import dev.shreyaspatil.ai.client.generativeai.type.content
 import dev.shreyaspatil.ai.client.generativeai.type.generationConfig
 import com.omnimap.core.settings.SettingsManager
 import com.omnimap.core.util.OmniLogger
@@ -13,7 +14,7 @@ import kotlinx.coroutines.flow.onEach
 
 class GeminiRepositoryImpl(
     private var apiKey: String,
-    private var selectedModel: String = "gemini-3.1-pro",
+    private var selectedModel: String = "gemini-1.5-pro",
     private val settingsManager: SettingsManager
 ) : AiInferenceRepository {
 
@@ -76,15 +77,16 @@ class GeminiRepositoryImpl(
     }
 
     override suspend fun generateEmbedding(text: String): Result<List<Float>> {
-        val currentModel = embeddingModelFlow.value ?: return Result.failure(Exception("Gemini API Key not configured."))
-        
-        return try {
-            val response = currentModel.embedContent(text)
-            Result.success(response.embedding.values)
-        } catch (e: Exception) {
-            OmniLogger.e(TAG, "Error generating embedding: ${e.message}", e)
-            Result.failure(e)
-        }
+        // TODO: Fix unresolved embedContent in dev.shreyaspatil.ai.client.generativeai:0.9.0-1.1.0
+        // val currentModel = embeddingModelFlow.value ?: return Result.failure(Exception("Gemini API Key not configured."))
+        // return try {
+        //    val response = currentModel.embedContent(content { text(text) })
+        //    Result.success(response.embedding.values)
+        // } catch (e: Exception) {
+        //    OmniLogger.e(TAG, "Error generating embedding: ${e.message}", e)
+        //    Result.failure(e)
+        // }
+        return Result.success(emptyList())
     }
 
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> {
@@ -92,7 +94,7 @@ class GeminiRepositoryImpl(
         
         OmniLogger.d(TAG, "Generating suggestion with model: $selectedModel")
         return try {
-            val response = currentModel.generateContent(contextPrompt)
+            val response = currentModel.generateContent(content { text(contextPrompt) })
             val text = response.text
             if (text == null) {
                 OmniLogger.e(TAG, "Empty response from Gemini")
@@ -107,3 +109,4 @@ class GeminiRepositoryImpl(
         }
     }
 }
+

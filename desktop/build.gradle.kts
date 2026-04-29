@@ -18,6 +18,8 @@ kotlin {
             dependencies {
                 implementation(project(":shared"))
                 implementation(compose.desktop.currentOs)
+                implementation("androidx.lifecycle:lifecycle-viewmodel:2.8.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
             }
         }
     }

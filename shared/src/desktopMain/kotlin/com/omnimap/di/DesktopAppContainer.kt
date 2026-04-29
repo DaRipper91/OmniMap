@@ -35,7 +35,9 @@ class DesktopAppContainer {
     }
 
     val aiInferenceRepository: AiInferenceRepository by lazy {
-        // REPLACE_WITH_GEMINI_API_KEY
-        GeminiRepositoryImpl(apiKey = "")
+        GeminiRepositoryImpl(
+            apiKey = "",
+            settingsManager = settingsManager
+        )
     }
 }

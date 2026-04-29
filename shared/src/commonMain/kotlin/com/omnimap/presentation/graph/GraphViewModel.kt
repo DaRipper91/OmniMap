@@ -13,6 +13,7 @@ import com.omnimap.domain.model.QueuedAiRequest
 import com.omnimap.domain.repository.AiInferenceRepository
 import com.omnimap.domain.repository.OmniMapRepository
 import com.omnimap.presentation.graph.chat.ChatMessage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
