@@ -1,7 +1,5 @@
 package com.omnimap.presentation.dashboard
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,8 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -25,38 +21,18 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel,
-    onNodeClick: (String) -> Unit
+    onNodeClick: (String) -> Unit,
+    onImportRequest: () -> Unit,
+    onExportRequest: (String) -> Unit
 ) {
     val query by viewModel.searchQuery.collectAsState()
     val results by viewModel.searchResults.collectAsState()
     val exportJson by viewModel.exportJsonResult.collectAsState()
-    val context = LocalContext.current
-
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        if (uri != null && exportJson != null) {
-            context.contentResolver.openOutputStream(uri)?.use { stream ->
-                stream.write(exportJson!!.toByteArray())
-            }
-        }
-        viewModel.clearExportResult()
-    }
-
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            context.contentResolver.openInputStream(uri)?.use { stream ->
-                val jsonText = stream.bufferedReader().use { it.readText() }
-                viewModel.importGraph(jsonText)
-            }
-        }
-    }
 
     LaunchedEffect(exportJson) {
         if (exportJson != null) {
-            exportLauncher.launch("omnimap_backup.json")
+            onExportRequest(exportJson!!)
+            viewModel.clearExportResult()
         }
     }
 
@@ -79,7 +55,7 @@ fun DashboardScreen(
             )
             
             Row {
-                IconButton(onClick = { importLauncher.launch(arrayOf("application/json")) }) {
+                IconButton(onClick = onImportRequest) {
                     Icon(Icons.Filled.Upload, contentDescription = "Import JSON", tint = MaterialTheme.colorScheme.primary)
                 }
                 IconButton(onClick = { viewModel.exportGraph() }) {

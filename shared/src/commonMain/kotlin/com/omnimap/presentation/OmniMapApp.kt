@@ -20,7 +20,10 @@ import com.omnimap.presentation.welcome.WelcomeScreen
 @Composable
 fun OmniMapApp(
     graphViewModel: GraphViewModel,
-    dashboardViewModel: DashboardViewModel
+    dashboardViewModel: DashboardViewModel,
+    authRepository: com.omnimap.domain.repository.AuthRepository,
+    onImportRequest: () -> Unit = {},
+    onExportRequest: (String) -> Unit = {}
 ) {
     OmniMapTheme {
         var currentScreen by remember { 
@@ -60,6 +63,7 @@ fun OmniMapApp(
                 when (currentScreen) {
                     Screen.Welcome -> {
                         WelcomeScreen(
+                            authRepository = authRepository,
                             onConfigurationFinished = { key, model, url ->
                                 graphViewModel.saveAiConfiguration(key, model, url)
                                 currentScreen = Screen.Dashboard
@@ -71,7 +75,9 @@ fun OmniMapApp(
                             onNodeClick = { nodeId ->
                                 // TODO: Focus specific node in graph
                                 currentScreen = Screen.Graph
-                            }
+                            },
+                            onImportRequest = onImportRequest,
+                            onExportRequest = onExportRequest
                         )
                     }
                     Screen.Graph -> {

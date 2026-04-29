@@ -21,14 +21,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+import com.omnimap.domain.repository.AuthRepository
+import kotlinx.coroutines.launch
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WelcomeScreen(
+    authRepository: AuthRepository,
     onConfigurationFinished: (String, String, String?) -> Unit
 ) {
     var step by remember { mutableStateOf(0) }
     var apiKey by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("gemini-3.1-pro") }
+    var selectedModel by remember { mutableStateOf("gemini-1.5-pro") }
+    val scope = rememberCoroutineScope()
+    val currentUser by authRepository.currentUser.collectAsState()
     var customModelName by remember { mutableStateOf("") }
     var baseUrl by remember { mutableStateOf("https://api.openai.com/v1/") }
     var expanded by remember { mutableStateOf(false) }
@@ -116,8 +122,49 @@ fun WelcomeScreen(
         )
         
         if (currentStep.isLast) {
-            Spacer(modifier = Modifier.height(32.dp))
-            
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        authRepository.login().onSuccess { user ->
+                            apiKey = user.accessToken ?: ""
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF4285F4),
+                    contentColor = Color.White
+                )
+            ) {
+                Icon(Icons.Filled.Key, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Login with Google")
+            }
+
+            if (currentUser != null) {
+                Text(
+                    text = "Logged in as ${currentUser?.name}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            Text(
+                text = "OR ENTER API KEY MANUALLY",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Box {
                 OutlinedButton(
                     onClick = { expanded = true },

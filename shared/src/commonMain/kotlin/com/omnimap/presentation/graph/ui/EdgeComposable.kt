@@ -23,16 +23,20 @@ fun EdgeComposable(
             val targetNode = nodes[edge.targetId]
 
             if (sourceNode != null && targetNode != null) {
-                // Approximate center of the node (assuming ~200px width, ~100px height for now)
-                val sourceOffset = Offset(sourceNode.x + 200f, sourceNode.y + 100f)
-                val targetOffset = Offset(targetNode.x + 200f, targetNode.y + 100f)
+                // Better approximation: center nodes assuming standard width/height
+                // Node width is min 140dp, max 280dp. Let's use 200dp center.
+                // Node height varies, but let's assume ~80dp for center.
+                // Note: In a production app, we would use onGloballyPositioned to get exact centers.
+                val sourceCenter = Offset(sourceNode.x + 100f, sourceNode.y + 40f)
+                val targetCenter = Offset(targetNode.x + 100f, targetNode.y + 40f)
 
                 drawLine(
                     color = edgeColor,
-                    start = sourceOffset,
-                    end = targetOffset,
-                    strokeWidth = 6f,
-                    cap = StrokeCap.Round
+                    start = sourceCenter,
+                    end = targetCenter,
+                    strokeWidth = 3f,
+                    cap = StrokeCap.Round,
+                    alpha = 0.6f
                 )
             }
         }

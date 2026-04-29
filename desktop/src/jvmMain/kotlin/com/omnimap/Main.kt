@@ -8,6 +8,10 @@ import com.omnimap.presentation.OmniMapApp
 import com.omnimap.presentation.dashboard.DashboardViewModel
 import com.omnimap.presentation.graph.GraphViewModel
 
+import java.io.File
+import javax.swing.JFileChooser
+import javax.swing.filechooser.FileNameExtensionFilter
+
 fun main() = application {
     val container = remember { DesktopAppContainer() }
     val graphViewModel = remember { 
@@ -25,7 +29,27 @@ fun main() = application {
     Window(onCloseRequest = ::exitApplication, title = "OmniMap") {
         OmniMapApp(
             graphViewModel = graphViewModel,
-            dashboardViewModel = dashboardViewModel
+            dashboardViewModel = dashboardViewModel,
+            authRepository = container.authRepository,
+            onImportRequest = {
+                val chooser = JFileChooser().apply {
+                    fileFilter = FileNameExtensionFilter("JSON Files", "json")
+                }
+                if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    val file = chooser.selectedFile
+                    dashboardViewModel.importGraph(file.readText())
+                }
+            },
+            onExportRequest = { json ->
+                val chooser = JFileChooser().apply {
+                    fileFilter = FileNameExtensionFilter("JSON Files", "json")
+                    selectedFile = File("omnimap_backup.json")
+                }
+                if (chooser.showSaveDialog(null) == JFileChooser.APPROVE_OPTION) {
+                    val file = chooser.selectedFile
+                    file.writeText(json)
+                }
+            }
         )
     }
 }

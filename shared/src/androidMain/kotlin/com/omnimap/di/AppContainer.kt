@@ -57,6 +57,10 @@ class AppContainer(private val context: Context) {
         )
     }
 
+    val authRepository: com.omnimap.domain.repository.AuthRepository by lazy {
+        com.omnimap.data.repository.AndroidAuthRepository(context)
+    }
+
     val aiInferenceRepository: AiInferenceRepository by lazy {
         object : AiInferenceRepository {
             private val geminiRepo = GeminiRepositoryImpl(

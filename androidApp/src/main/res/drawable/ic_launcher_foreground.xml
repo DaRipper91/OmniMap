@@ -3,10 +3,39 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    
+    <!-- OmniMap Logo: Neural Graph Structure -->
+    
+    <!-- Central Node Core -->
     <path
         android:fillColor="#D0BCFF"
-        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+        android:pathData="M54,54m-12,0a12,12 0,1 1,24 0a12,12 0,1 1,-24 0" />
+        
+    <!-- Connection Lines -->
     <path
-        android:fillColor="#381E72"
-        android:pathData="M54,34L44,54H54L54,74L64,54H54L54,34Z" />
+        android:strokeColor="#D0BCFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M54,42L54,26M43.6,60L30,68M64.4,60L78,68" />
+        
+    <!-- Satellite Nodes -->
+    <!-- Top -->
+    <path
+        android:fillColor="#EFB8C8"
+        android:pathData="M54,26m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <!-- Bottom Left -->
+    <path
+        android:fillColor="#CCC2DC"
+        android:pathData="M30,68m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+    <!-- Bottom Right -->
+    <path
+        android:fillColor="#D0BCFF"
+        android:pathData="M78,68m-6,0a6,6 0,1 1,12 0a6,6 0,1 1,-12 0" />
+
+    <!-- Subtle Glow/Aura around central node -->
+    <path
+        android:fillColor="#D0BCFF"
+        android:fillAlpha="0.15"
+        android:pathData="M54,54m-20,0a20,20 0,1 1,40 0a20,20 0,1 1,-40 0" />
+
 </vector>
