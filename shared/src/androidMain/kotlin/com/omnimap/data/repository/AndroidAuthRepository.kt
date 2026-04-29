@@ -7,8 +7,12 @@ import com.omnimap.data.remote.api.GoogleAuthApi
 import com.omnimap.domain.repository.AuthRepository
 import com.omnimap.domain.repository.UserProfile
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.UUID
@@ -16,6 +20,9 @@ import java.util.UUID
 class AndroidAuthRepository(private val context: Context) : AuthRepository {
     private val _currentUser = MutableStateFlow<UserProfile?>(null)
     override val currentUser: StateFlow<UserProfile?> = _currentUser
+
+    private val _authResults = MutableSharedFlow<Result<UserProfile>>()
+    override val authResults: SharedFlow<Result<UserProfile>> = _authResults.asSharedFlow()
 
     private val clientId = "724915152342-9v4s9v4s9v4s9v4s.apps.googleusercontent.com" // Placeholder
     private val clientSecret = "GOCSPX-v4s9v4s9v4s9v4s9v4s" // Placeholder
@@ -26,8 +33,6 @@ class AndroidAuthRepository(private val context: Context) : AuthRepository {
         .addConverterFactory(GsonConverterFactory.create())
         .build()
         .create(GoogleAuthApi::class.java)
-
-    private var loginCompletable: CompletableDeferred<Result<UserProfile>>? = null
 
     override suspend fun login(): Result<UserProfile> {
         val state = UUID.randomUUID().toString()
@@ -40,21 +45,19 @@ class AndroidAuthRepository(private val context: Context) : AuthRepository {
             .appendQueryParameter("state", state)
             .build()
             .toString()
-
-        loginCompletable = CompletableDeferred()
         
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(authUrl)).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
 
-        return loginCompletable!!.await()
+        return authResults.first()
     }
 
     fun handleRedirect(uri: Uri) {
         val code = uri.getQueryParameter("code")
-        if (code != null) {
-            CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
+            if (code != null) {
                 try {
                     val tokenResponse = authApi.exchangeCodeForToken(
                         code = code,
@@ -72,13 +75,13 @@ class AndroidAuthRepository(private val context: Context) : AuthRepository {
                         accessToken = tokenResponse.access_token
                     )
                     _currentUser.value = user
-                    loginCompletable?.complete(Result.success(user))
+                    _authResults.emit(Result.success(user))
                 } catch (e: Exception) {
-                    loginCompletable?.complete(Result.failure(e))
+                    _authResults.emit(Result.failure(e))
                 }
+            } else {
+                _authResults.emit(Result.failure(Exception("No code found in redirect URI")))
             }
-        } else {
-            loginCompletable?.complete(Result.failure(Exception("No code found in redirect URI")))
         }
     }
 

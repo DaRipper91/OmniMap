@@ -14,8 +14,10 @@ import com.omnimap.data.repository.GeminiRepositoryImpl
 import com.omnimap.data.repository.OmniMapRepositoryImpl
 import com.omnimap.domain.repository.AiInferenceRepository
 import com.omnimap.domain.repository.OmniMapRepository
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -42,7 +44,6 @@ class AppContainer(private val context: Context) {
 
     val ollamaApi: OllamaApi by lazy {
         Retrofit.Builder()
-            // Default IP pointing to the local gpt4all/ollama bridge as defined in ARCH_LIVE_INTELLIGENCE.md
             .baseUrl("http://100.115.141.124:4891/") 
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -64,30 +65,40 @@ class AppContainer(private val context: Context) {
     val aiInferenceRepository: AiInferenceRepository by lazy {
         object : AiInferenceRepository {
             private val geminiRepo = GeminiRepositoryImpl(
-                apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: "",
-                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro",
+                apiKey = "",
+                selectedModel = "gemini-3.1-pro",
                 settingsManager = settingsManager
             )
             
             private val openAiRepo = com.omnimap.data.repository.OpenAiRepositoryImpl(
-                apiKey = runBlocking { settingsManager.getGeminiApiKey().firstOrNull() } ?: "",
-                selectedModel = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "llama3.1",
-                baseUrl = runBlocking { settingsManager.getBaseUrl().firstOrNull() },
+                apiKey = "",
+                selectedModel = "llama3.1",
+                baseUrl = null,
                 settingsManager = settingsManager
             )
 
+            private var currentModel: String = "gemini-3.1-pro"
+            private val scope = CoroutineScope(Dispatchers.Main)
+
+            init {
+                settingsManager.getSelectedModel()
+                    .onEach { currentModel = it }
+                    .launchIn(scope)
+            }
+
             private fun getActiveRepo(): AiInferenceRepository {
-                val model = runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro"
-                return if (model.startsWith("gemini")) geminiRepo else openAiRepo
+                return if (currentModel.startsWith("gemini")) geminiRepo else openAiRepo
             }
 
             override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> =
                 getActiveRepo().generateNodeSuggestion(contextPrompt)
 
+            override suspend fun generateEmbedding(text: String): Result<List<Float>> =
+                getActiveRepo().generateEmbedding(text)
+
             override fun isConfigured(): Boolean = getActiveRepo().isConfigured()
             
-            override fun getSelectedModel(): String = 
-                runBlocking { settingsManager.getSelectedModel().firstOrNull() } ?: "gemini-3.1-pro"
+            override fun getSelectedModel(): String = currentModel
 
             override suspend fun saveConfiguration(apiKey: String, model: String, baseUrl: String?) {
                 settingsManager.saveGeminiApiKey(apiKey)

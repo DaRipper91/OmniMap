@@ -1,5 +1,6 @@
 package com.omnimap.domain.repository
 
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 
 data class UserProfile(
@@ -13,6 +14,7 @@ data class UserProfile(
 
 interface AuthRepository {
     val currentUser: StateFlow<UserProfile?>
+    val authResults: SharedFlow<Result<UserProfile>>
     suspend fun login(): Result<UserProfile>
     suspend fun logout()
 }

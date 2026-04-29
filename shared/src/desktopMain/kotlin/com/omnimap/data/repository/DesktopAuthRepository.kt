@@ -5,8 +5,11 @@ import com.omnimap.data.remote.api.GoogleAuthApi
 import com.omnimap.domain.repository.AuthRepository
 import com.omnimap.domain.repository.UserProfile
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.net.ServerSocket
@@ -15,6 +18,9 @@ import java.util.UUID
 class DesktopAuthRepository : AuthRepository {
     private val _currentUser = MutableStateFlow<UserProfile?>(null)
     override val currentUser: StateFlow<UserProfile?> = _currentUser
+
+    private val _authResults = MutableSharedFlow<Result<UserProfile>>()
+    override val authResults: SharedFlow<Result<UserProfile>> = _authResults.asSharedFlow()
 
     // These should ideally be injected or moved to a config
     private val clientId = "724915152342-9v4s9v4s9v4s9v4s.apps.googleusercontent.com" // Placeholder
@@ -68,7 +74,11 @@ class DesktopAuthRepository : AuthRepository {
             client.getOutputStream().flush()
             client.close()
 
-            if (code == null) return@withContext Result.failure(Exception("Failed to get authorization code"))
+            if (code == null) {
+                val res = Result.failure<UserProfile>(Exception("Failed to get authorization code"))
+                _authResults.emit(res)
+                return@withContext res
+            }
 
             val tokenResponse = authApi.exchangeCodeForToken(
                 code = code,
@@ -89,9 +99,13 @@ class DesktopAuthRepository : AuthRepository {
             )
             
             _currentUser.value = user
-            Result.success(user)
+            val successRes = Result.success(user)
+            _authResults.emit(successRes)
+            successRes
         } catch (e: Exception) {
-            Result.failure(e)
+            val failRes = Result.failure<UserProfile>(e)
+            _authResults.emit(failRes)
+            failRes
         } finally {
             serverSocket?.close()
         }

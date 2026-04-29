@@ -157,20 +157,23 @@ class GraphViewModel(
             }
         }
 
-        // Apply new positions
-        newVelocities.forEach { (id, v) ->
-            velocityMap[id] = v
-            val node = currentState.nodes[id] ?: return@forEach
-            if (id != currentState.selectedNodeId) { // Don't move the node user is currently dragging
-                val newX = node.x + v.first
-                val newY = node.y + v.second
-                // Only update locally for smoothness, don't spam DB in physics loop
-                _state.update { s ->
-                    val m = s.nodes.toMutableMap()
-                    m[id] = m[id]!!.copy(x = newX, y = newY)
-                    s.copy(nodes = m)
+        // Apply new positions in a single batch update
+        _state.update { currentState ->
+            val newNodes = currentState.nodes.toMutableMap()
+            var changed = false
+            
+            newVelocities.forEach { (id, v) ->
+                velocityMap[id] = v
+                val node = newNodes[id] ?: return@forEach
+                if (id != currentState.selectedNodeId) {
+                    val newX = node.x + v.first
+                    val newY = node.y + v.second
+                    newNodes[id] = node.copy(x = newX, y = newY)
+                    changed = true
                 }
             }
+            
+            if (changed) currentState.copy(nodes = newNodes) else currentState
         }
     }
 
