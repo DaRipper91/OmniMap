@@ -31,12 +31,15 @@ class AndroidAuthRepository(private val context: Context) : AuthRepository {
 
     override suspend fun login(): Result<UserProfile> {
         val state = UUID.randomUUID().toString()
-        val authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
-                "client_id=$clientId&" +
-                "redirect_uri=$redirectUri&" +
-                "response_type=code&" +
-                "scope=https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email&" +
-                "state=$state"
+        val authUrl = Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")
+            .buildUpon()
+            .appendQueryParameter("client_id", clientId)
+            .appendQueryParameter("redirect_uri", redirectUri)
+            .appendQueryParameter("response_type", "code")
+            .appendQueryParameter("scope", "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email")
+            .appendQueryParameter("state", state)
+            .build()
+            .toString()
 
         loginCompletable = CompletableDeferred()
         

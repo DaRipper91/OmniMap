@@ -32,11 +32,15 @@ class DesktopAuthRepository : AuthRepository {
         var serverSocket: ServerSocket? = null
         try {
             val state = UUID.randomUUID().toString()
+            val encodedRedirectUri = java.net.URLEncoder.encode(redirectUri, "UTF-8")
+            val scope = "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email"
+            val encodedScope = java.net.URLEncoder.encode(scope, "UTF-8")
+
             val authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" +
                     "client_id=$clientId&" +
-                    "redirect_uri=$redirectUri&" +
+                    "redirect_uri=$encodedRedirectUri&" +
                     "response_type=code&" +
-                    "scope=https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email&" +
+                    "scope=$encodedScope&" +
                     "state=$state"
 
             BrowserUtil.openUrl(authUrl)
