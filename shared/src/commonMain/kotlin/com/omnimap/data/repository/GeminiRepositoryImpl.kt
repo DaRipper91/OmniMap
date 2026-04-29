@@ -19,6 +19,7 @@ class GeminiRepositoryImpl(
 
     private val TAG = "GeminiRepository"
     private val modelFlow = MutableStateFlow<GenerativeModel?>(createModel(apiKey, selectedModel))
+    private val embeddingModelFlow = MutableStateFlow<GenerativeModel?>(createModel(apiKey, "text-embedding-004"))
     private val scope = CoroutineScope(Dispatchers.Main)
 
     init {
@@ -28,6 +29,7 @@ class GeminiRepositoryImpl(
                     OmniLogger.d(TAG, "API Key updated")
                     apiKey = newKey
                     modelFlow.value = createModel(newKey, selectedModel)
+                    embeddingModelFlow.value = createModel(newKey, "text-embedding-004")
                 }
             }
             .launchIn(scope)
@@ -71,6 +73,18 @@ class GeminiRepositoryImpl(
         settingsManager.saveGeminiApiKey(apiKey)
         settingsManager.saveSelectedModel(model)
         settingsManager.saveBaseUrl(baseUrl)
+    }
+
+    override suspend fun generateEmbedding(text: String): Result<List<Float>> {
+        val currentModel = embeddingModelFlow.value ?: return Result.failure(Exception("Gemini API Key not configured."))
+        
+        return try {
+            val response = currentModel.embedContent(text)
+            Result.success(response.embedding.values)
+        } catch (e: Exception) {
+            OmniLogger.e(TAG, "Error generating embedding: ${e.message}", e)
+            Result.failure(e)
+        }
     }
 
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> {

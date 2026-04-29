@@ -30,13 +30,15 @@ fun EdgeComposable(
                 val sourceCenter = Offset(sourceNode.x + 100f, sourceNode.y + 40f)
                 val targetCenter = Offset(targetNode.x + 100f, targetNode.y + 40f)
 
+                val alpha = if (edge.isDraft || sourceNode.isDraft || targetNode.isDraft) 0.2f else 0.6f
+
                 drawLine(
                     color = edgeColor,
                     start = sourceCenter,
                     end = targetCenter,
                     strokeWidth = 3f,
                     cap = StrokeCap.Round,
-                    alpha = 0.6f
+                    alpha = alpha
                 )
             }
         }

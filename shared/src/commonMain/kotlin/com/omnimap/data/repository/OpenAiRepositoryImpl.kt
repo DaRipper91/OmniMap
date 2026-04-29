@@ -41,6 +41,11 @@ class OpenAiRepositoryImpl(
         settingsManager.saveBaseUrl(baseUrl)
     }
 
+    override suspend fun generateEmbedding(text: String): Result<List<Float>> {
+        // Mocking for now, as local providers like Ollama often have separate /embeddings endpoints
+        return Result.success(emptyList())
+    }
+
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> {
         val url = baseUrl ?: return Result.failure(Exception("Base URL not configured"))
         val finalUrl = if (url.endsWith("/")) "${url}chat/completions" else "$url/chat/completions"

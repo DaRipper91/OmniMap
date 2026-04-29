@@ -32,6 +32,7 @@ fun NodeComposable(
 ) {
     val haptic = LocalHapticFeedback.current
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+    val alpha = if (node.isDraft) 0.5f else 1f
 
     Card(
         modifier = Modifier
@@ -57,8 +58,8 @@ fun NodeComposable(
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp),
         border = androidx.compose.foundation.BorderStroke(2.dp, borderColor),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = alpha),
+            contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha)
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

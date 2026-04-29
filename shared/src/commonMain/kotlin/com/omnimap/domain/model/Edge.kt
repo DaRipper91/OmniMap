@@ -15,5 +15,6 @@ data class Edge(
     val sourceId: String,
     val targetId: String,
     val type: EdgeType,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val isDraft: Boolean = false
 )

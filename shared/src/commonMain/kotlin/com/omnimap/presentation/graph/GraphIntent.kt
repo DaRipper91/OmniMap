@@ -16,4 +16,8 @@ sealed class GraphIntent {
     data class OnNodeUpdated(val id: String, val newTitle: String, val newDescription: String) : GraphIntent()
     data class OnCreateNodeRequest(val show: Boolean) : GraphIntent()
     object RetryQueuedRequests : GraphIntent()
+    object OnCommitDrafts : GraphIntent()
+    object OnDiscardDrafts : GraphIntent()
+    data class OnStartSyncServer(val port: Int) : GraphIntent()
+    data class OnSyncRequested(val targetIp: String, val port: Int) : GraphIntent()
 }

@@ -20,5 +20,7 @@ data class Node(
     val updatedAt: Long = System.currentTimeMillis(),
     val x: Float = 0f,
     val y: Float = 0f,
-    val isLocked: Boolean = false
+    val isLocked: Boolean = false,
+    val isDraft: Boolean = false,
+    val embedding: String? = null // JSON array of floats
 )

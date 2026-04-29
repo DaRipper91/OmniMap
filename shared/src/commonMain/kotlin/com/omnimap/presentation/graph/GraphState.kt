@@ -15,5 +15,6 @@ data class GraphState(
     val isAiThinking: Boolean = false,
     val chatHistory: List<ChatMessage> = emptyList(),
     val editingNode: Node? = null,
-    val isCreatingNode: Boolean = false
+    val isCreatingNode: Boolean = false,
+    val syncStatus: String? = null
 )

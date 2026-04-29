@@ -50,10 +50,128 @@ class GraphViewModel(
 
     private val intentChannel = Channel<GraphIntent>(Channel.UNLIMITED)
 
+    private val velocityMap = mutableMapOf<String, Pair<Float, Float>>()
+
     init {
         handleIntents()
         observeGraphData()
         observeConnectivity()
+        startPhysicsLoop()
+        startBackgroundRefinement()
+    }
+
+    private fun startBackgroundRefinement() {
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(60000 * 5) // Refine every 5 minutes
+                if (aiRepository.isConfigured() && !state.value.isAiThinking) {
+                    refineGraphAutonomous()
+                }
+            }
+        }
+    }
+
+    private suspend fun refineGraphAutonomous() {
+        val currentNodes = state.value.nodes.values.filter { !it.isDraft }
+        if (currentNodes.size < 2) return
+
+        val graphSummary = currentNodes.joinToString("\n") { "- ${it.title}: ${it.description}" }
+        val prompt = """
+            Autonomous Refinement Mode.
+            Current Graph Summary:
+            $graphSummary
+            
+            Task: Analyze this graph for missing logical connections or obvious next steps.
+            Propose 1-2 new nodes or edges that would add value.
+            Output ONLY valid JSON for mutations.
+        """.trimIndent()
+        
+        executeAiRequest(prompt, null)
+    }
+
+    private fun generateEmbeddingForNode(node: Node) {
+        viewModelScope.launch {
+            val text = "${node.title} ${node.description}"
+            aiRepository.generateEmbedding(text).onSuccess { vector ->
+                repository.updateNode(node.copy(embedding = gson.toJson(vector)))
+            }
+        }
+    }
+
+    private fun startPhysicsLoop() {
+        viewModelScope.launch {
+            while (true) {
+                applyPhysics()
+                kotlinx.coroutines.delay(16) // ~60fps for physics updates
+            }
+        }
+    }
+
+    private suspend fun applyPhysics() {
+        val currentState = _state.value
+        if (currentState.isLoading) return
+        
+        val nodes = currentState.nodes.values.toList()
+        val edges = currentState.edges
+        
+        val newVelocities = mutableMapOf<String, Pair<Float, Float>>()
+        
+        // 1. Repulsion between all nodes (Electrostatic-like)
+        for (i in nodes.indices) {
+            val n1 = nodes[i]
+            var fx = 0f
+            var fy = 0f
+            
+            for (j in nodes.indices) {
+                if (i == j) continue
+                val n2 = nodes[j]
+                val dx = n1.x - n2.x
+                val dy = n1.y - n2.y
+                val distSq = dx * dx + dy * dy + 0.1f
+                val force = 5000f / distSq
+                fx += (dx / Math.sqrt(distSq.toDouble()).toFloat()) * force
+                fy += (dy / Math.sqrt(distSq.toDouble()).toFloat()) * force
+            }
+            
+            // 2. Attraction between connected nodes (Spring-like)
+            edges.forEach { edge ->
+                if (edge.sourceId == n1.id || edge.targetId == n1.id) {
+                    val otherId = if (edge.sourceId == n1.id) edge.targetId else edge.sourceId
+                    val other = currentState.nodes[otherId] ?: return@forEach
+                    val dx = other.x - n1.x
+                    val dy = other.y - n1.y
+                    val dist = Math.sqrt((dx * dx + dy * dy).toDouble()).toFloat() + 0.1f
+                    val force = (dist - 300f) * 0.05f // 300px target distance
+                    fx += (dx / dist) * force
+                    fy += (dy / dist) * force
+                }
+            }
+
+            // Apply friction/damping
+            val (vx, vy) = velocityMap[n1.id] ?: (0f to 0f)
+            val newVx = (vx + fx) * 0.8f
+            val newVy = (vy + fy) * 0.8f
+            
+            if (Math.abs(newVx) > 0.1f || Math.abs(newVy) > 0.1f) {
+                newVelocities[n1.id] = newVx to newVy
+            }
+        }
+
+        // Apply new positions
+        newVelocities.forEach { (id, v) ->
+            velocityMap[id] = v
+            val node = currentState.nodes[id] ?: return@forEach
+            if (id != currentState.selectedNodeId) { // Don't move the node user is currently dragging
+                val newX = node.x + v.first
+                val newY = node.y + v.second
+                // Only update locally for smoothness, don't spam DB in physics loop
+                _state.update { s ->
+                    val m = s.nodes.toMutableMap()
+                    m[id] = m[id]!!.copy(x = newX, y = newY)
+                    s.copy(nodes = m)
+                }
+            }
+        }
     }
 
     private fun observeConnectivity() {
@@ -90,9 +208,71 @@ class GraphViewModel(
                     is GraphIntent.OnNodeUpdated -> updateNodeData(intent.id, intent.newTitle, intent.newDescription)
                     is GraphIntent.OnCreateNodeRequest -> _state.update { it.copy(isCreatingNode = intent.show) }
                     is GraphIntent.RetryQueuedRequests -> retryQueuedRequests()
+                    is GraphIntent.OnCommitDrafts -> commitDrafts()
+                    is GraphIntent.OnDiscardDrafts -> discardDrafts()
+                    is GraphIntent.OnStartSyncServer -> startSyncServer(intent.port)
+                    is GraphIntent.OnSyncRequested -> syncWithHub(intent.targetIp, intent.port)
                 }
             }
         }
+    }
+
+    private fun startSyncServer(port: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val serverSocket = java.net.ServerSocket(port)
+                _state.update { it.copy(syncStatus = "Hub Active: Port $port") }
+                while (true) {
+                    val client = serverSocket.accept()
+                    val json = repository.exportGraphToJson()
+                    val response = "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: ${json.length}\r\n\r\n$json"
+                    client.getOutputStream().write(response.toByteArray())
+                    client.close()
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(syncStatus = "Hub Error: ${e.message}") }
+            }
+        }
+    }
+
+    private fun syncWithHub(ip: String, port: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            _state.update { it.copy(syncStatus = "Syncing with $ip...") }
+            try {
+                val socket = java.net.Socket(ip, port)
+                val request = "GET / HTTP/1.1\r\nHost: $ip\r\n\r\n"
+                socket.getOutputStream().write(request.toByteArray())
+                
+                val response = socket.getInputStream().bufferedReader().readText()
+                val json = response.substringAfter("\r\n\r\n")
+                
+                repository.importGraphFromJson(json)
+                _state.update { it.copy(syncStatus = "Sync Complete") }
+                hapticEngine.performHeavySnap()
+            } catch (e: Exception) {
+                _state.update { it.copy(syncStatus = "Sync Failed: ${e.message}") }
+            }
+        }
+    }
+
+    private suspend fun commitDrafts() {
+        _state.value.nodes.values.filter { it.isDraft }.forEach {
+            repository.updateNode(it.copy(isDraft = false))
+        }
+        _state.value.edges.filter { it.isDraft }.forEach {
+            repository.updateEdge(it.copy(isDraft = false))
+        }
+        hapticEngine.performHeavySnap()
+    }
+
+    private suspend fun discardDrafts() {
+        _state.value.nodes.values.filter { it.isDraft }.forEach {
+            repository.deleteNode(it)
+        }
+        _state.value.edges.filter { it.isDraft }.forEach {
+            repository.deleteEdge(it)
+        }
+        hapticEngine.performLightTick()
     }
 
     private fun editNodeRequest(id: String?) {
@@ -108,6 +288,7 @@ class GraphViewModel(
         val node = _state.value.nodes[id] ?: return
         val updatedNode = node.copy(title = title, description = description, updatedAt = System.currentTimeMillis())
         repository.updateNode(updatedNode)
+        generateEmbeddingForNode(updatedNode)
         _state.update { it.copy(editingNode = null) } // Close dialog
     }
 
@@ -223,7 +404,8 @@ class GraphViewModel(
                     description = nodeDto.description,
                     data = "{}",
                     x = nodeDto.x ?: (Math.random() * 500).toFloat(),
-                    y = nodeDto.y ?: (Math.random() * 500).toFloat()
+                    y = nodeDto.y ?: (Math.random() * 500).toFloat(),
+                    isDraft = true
                 )
                 repository.insertNode(newNode)
             }
@@ -231,7 +413,8 @@ class GraphViewModel(
                 val newEdge = Edge(
                     sourceId = edgeDto.sourceId,
                     targetId = edgeDto.targetId,
-                    type = edgeDto.type
+                    type = edgeDto.type,
+                    isDraft = true
                 )
                 repository.insertEdge(newEdge)
             }
@@ -291,6 +474,7 @@ class GraphViewModel(
             y = intent.y
         )
         repository.insertNode(newNode)
+        generateEmbeddingForNode(newNode)
     }
 
     private suspend fun createEdge(intent: GraphIntent.OnEdgeCreated) {
