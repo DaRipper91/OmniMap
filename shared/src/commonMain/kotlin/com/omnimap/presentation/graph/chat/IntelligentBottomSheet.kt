@@ -17,7 +17,7 @@ fun IntelligentBottomSheet(viewModel: GraphViewModel, state: GraphState) {
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 200.dp, max = 500.dp)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
         ChatContent(
             state = state,
@@ -26,7 +26,9 @@ fun IntelligentBottomSheet(viewModel: GraphViewModel, state: GraphState) {
             },
             onRetryClicked = {
                 viewModel.processIntent(GraphIntent.RetryQueuedRequests)
-            }
+            },
+            promptText = viewModel.promptDraft,
+            onPromptTextChange = { viewModel.promptDraft = it }
         )
     }
 }

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OmniMap
+GenericName=Mind map
+Comment=Local-first, AI-writable neural graph
+Exec=omnimap
+Icon=omnimap
+Terminal=false
+Categories=Office;
+Keywords=graph;mindmap;notes;ai;
+StartupWMClass=com-omnimap-MainKt

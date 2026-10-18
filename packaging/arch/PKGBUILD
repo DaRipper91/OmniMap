@@ -1,0 +1,47 @@
+# Maintainer: DaRipper91
+#
+# Builds OmniMap Desktop from source for Arch-based distros (CachyOS, Asahi ALARM).
+# The result bundles its own trimmed Java runtime, so no JRE is needed at runtime.
+#
+#   cd packaging/arch && makepkg -si
+#
+# Gradle downloads its dependencies during build(), so this needs network access.
+
+pkgname=omnimap-git
+pkgver=r0
+pkgrel=1
+pkgdesc="Local-first, AI-writable neural graph (desktop)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/DaRipper91/OmniMap"
+license=('LicenseRef-Proprietary')
+depends=('fontconfig' 'freetype2' 'libxext' 'libxrender' 'libxtst' 'libxi' 'libglvnd' 'hicolor-icon-theme')
+makedepends=('git' 'jdk21-openjdk')
+provides=('omnimap')
+conflicts=('omnimap' 'omnimap-bin')
+# The bundled Java runtime ships prebuilt native libraries; stripping them breaks it.
+options=('!strip' '!debug')
+source=("omnimap::git+https://github.com/DaRipper91/OmniMap.git#branch=main")
+sha256sums=('SKIP')
+
+pkgver() {
+    cd omnimap
+    printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short=7 HEAD)"
+}
+
+build() {
+    cd omnimap
+    export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+    export GRADLE_USER_HOME="$srcdir/gradle-home"
+    ./gradlew --no-daemon :desktop:createDistributable
+}
+
+package() {
+    cd omnimap
+    install -d "$pkgdir/opt/omnimap" "$pkgdir/usr/bin"
+    cp -a desktop/build/compose/binaries/main/app/OmniMap/. "$pkgdir/opt/omnimap/"
+    ln -s /opt/omnimap/bin/OmniMap "$pkgdir/usr/bin/omnimap"
+
+    install -Dm644 packaging/linux/omnimap.desktop "$pkgdir/usr/share/applications/omnimap.desktop"
+    install -Dm644 desktop/src/desktopMain/resources/omnimap.png \
+        "$pkgdir/usr/share/icons/hicolor/512x512/apps/omnimap.png"
+}

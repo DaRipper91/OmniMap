@@ -12,13 +12,19 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = DarkTertiary,
     background = DarkBackground,
     surface = DarkSurface,
-    onPrimary = Purple40,
-    onSecondary = PurpleGrey40,
-    onTertiary = Pink40,
+    onPrimary = DarkOnPrimary,
+    onSecondary = DarkOnSecondary,
+    onTertiary = DarkOnTertiary,
     onBackground = HighContrastWhite,
     onSurface = HighContrastWhite,
     surfaceVariant = DarkSurfaceVariant,
-    onSurfaceVariant = HighContrastWhite
+    onSurfaceVariant = HighContrastWhite,
+    surfaceContainerLowest = DarkBackground,
+    surfaceContainerLow = DarkSurfaceContainerLow,
+    surfaceContainer = DarkSurfaceContainer,
+    surfaceContainerHigh = DarkSurfaceContainerHigh,
+    surfaceContainerHighest = DarkSurfaceContainerHighest,
+    outline = HighContrastGray
 )
 
 private val LightColorScheme = lightColorScheme(

@@ -37,6 +37,8 @@ fun FeedScreen(viewModel: GraphViewModel) {
             onRetryClicked = {
                 viewModel.processIntent(GraphIntent.RetryQueuedRequests)
             },
+            promptText = viewModel.promptDraft,
+            onPromptTextChange = { viewModel.promptDraft = it },
             modifier = Modifier.weight(1f)
         )
     }

@@ -19,6 +19,9 @@ class DesktopAuthRepository : AuthRepository {
     private val _currentUser = MutableStateFlow<UserProfile?>(null)
     override val currentUser: StateFlow<UserProfile?> = _currentUser
 
+    // The client id/secret below are placeholders, so sign-in can't succeed yet.
+    override val isLoginAvailable: Boolean get() = false
+
     private val _authResults = MutableSharedFlow<Result<UserProfile>>()
     override val authResults: SharedFlow<Result<UserProfile>> = _authResults.asSharedFlow()
 

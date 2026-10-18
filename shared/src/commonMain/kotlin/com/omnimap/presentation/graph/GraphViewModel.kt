@@ -1,5 +1,7 @@
 package com.omnimap.presentation.graph
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
@@ -7,6 +9,7 @@ import com.omnimap.core.connectivity.ConnectivityObserver
 import com.omnimap.core.haptics.HapticEngine
 import com.omnimap.data.remote.dto.AiMutationResponse
 import com.omnimap.domain.model.Edge
+import com.omnimap.domain.model.EdgeType
 import com.omnimap.domain.model.Node
 import com.omnimap.domain.model.NodeType
 import com.omnimap.domain.model.QueuedAiRequest
@@ -45,6 +48,9 @@ class GraphViewModel(
             }
         }
     }
+
+    /** The unsent chat message, kept here so hiding the panel or switching layouts doesn't lose it. */
+    var promptDraft by androidx.compose.runtime.mutableStateOf("")
 
     private val _state = MutableStateFlow(GraphState(isLoading = true))
     val state: StateFlow<GraphState> = _state.asStateFlow()
@@ -206,6 +212,12 @@ class GraphViewModel(
                     is GraphIntent.OnEdgeCreated -> createEdge(intent)
                     is GraphIntent.OnNodeDeleted -> deleteNode(intent.id)
                     is GraphIntent.OnEdgeDeleted -> deleteEdge(intent.id)
+                    is GraphIntent.OnEdgeTypeChanged -> changeEdgeType(intent.id, intent.type)
+                    is GraphIntent.OnFocusNode -> _state.update {
+                        it.copy(selectedNodeId = intent.id, focusNodeId = intent.id, focusRequest = it.focusRequest + 1)
+                    }
+                    is GraphIntent.OnFocusHandled -> _state.update { it.copy(focusNodeId = null) }
+                    is GraphIntent.OnErrorShown -> _state.update { it.copy(error = null, syncStatus = null) }
                     is GraphIntent.OnNodeSelected -> selectNode(intent.id)
                     is GraphIntent.OnSubmitPrompt -> submitPrompt(intent.prompt)
                     is GraphIntent.OnEditNodeRequest -> editNodeRequest(intent.id)
@@ -355,9 +367,14 @@ class GraphViewModel(
         """.trimIndent()
 
         val fullPrompt = "$systemInstruction\n\n$contextPrefix\nUser prompt: $prompt"
-        val result = aiRepository.generateNodeSuggestion(fullPrompt)
+        // Some providers (e.g. agent CLIs) can throw instead of returning a failure.
+        val result = try {
+            aiRepository.generateNodeSuggestion(fullPrompt)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
         
-        val rawText = result.getOrElse { 
+        val rawText = result.getOrElse { failure ->
             // Handle failure by queueing
             if (queuedId == null) {
                 repository.insertQueuedAiRequest(
@@ -365,11 +382,17 @@ class GraphViewModel(
                 )
             }
             
-            val aiMsg = ChatMessage(text = "AI request failed. ${it.message}. It has been queued for retry.", isFromUser = false)
+            val reason = failure.message?.takeIf { it.isNotBlank() } ?: failure::class.simpleName ?: "Unknown error"
+            val aiMsg = ChatMessage(
+                text = "The Architect couldn't answer: $reason\nYour request is saved, so you can retry it.",
+                isFromUser = false,
+                isError = true
+            )
             _state.update {
                 it.copy(
                     chatHistory = it.chatHistory + aiMsg,
-                    isAiThinking = if (queuedId != null) it.isAiThinking else false
+                    isAiThinking = if (queuedId != null) it.isAiThinking else false,
+                    error = "The Architect couldn't answer: $reason"
                 )
             }
             return
@@ -401,14 +424,23 @@ class GraphViewModel(
 
         // Apply mutations if parsed successfully
         mutation?.let {
-            it.nodes.forEach { nodeDto ->
+            // Without coordinates from the AI, place drafts around the node they expand on
+            // (or the graph's middle) instead of piling them up in one corner.
+            val anchor = contextNodeId?.let { id -> currentState.nodes[id] }
+            val centre = anchor?.let { n -> n.x to n.y } ?: currentState.nodes.values.takeIf { n -> n.isNotEmpty() }
+                ?.let { n -> n.map { node -> node.x }.average().toFloat() to n.map { node -> node.y }.average().toFloat() }
+                ?: (0f to 0f)
+            val count = it.nodes.size.coerceAtLeast(1)
+            it.nodes.forEachIndexed { index, nodeDto ->
+                val angle = 2 * Math.PI * index / count
+                val radius = 260.0
                 val newNode = Node(
                     type = nodeDto.type,
                     title = nodeDto.title,
                     description = nodeDto.description,
                     data = "{}",
-                    x = nodeDto.x ?: (Math.random() * 500).toFloat(),
-                    y = nodeDto.y ?: (Math.random() * 500).toFloat(),
+                    x = nodeDto.x ?: (centre.first + radius * Math.cos(angle)).toFloat(),
+                    y = nodeDto.y ?: (centre.second + radius * Math.sin(angle)).toFloat(),
                     isDraft = true
                 )
                 repository.insertNode(newNode)
@@ -447,8 +479,7 @@ class GraphViewModel(
                         nodes = nodesMap,
                         edges = edgesList,
                         queuedRequests = queuedList,
-                        isLoading = false,
-                        error = null
+                        isLoading = false
                     )
                 }
             }.collect {}
@@ -494,6 +525,11 @@ class GraphViewModel(
     private suspend fun deleteNode(id: String) {
         val node = _state.value.nodes[id] ?: return
         repository.deleteNode(node)
+    }
+
+    private suspend fun changeEdgeType(id: String, type: EdgeType) {
+        val edge = _state.value.edges.find { it.id == id } ?: return
+        repository.updateEdge(edge.copy(type = type))
     }
 
     private suspend fun deleteEdge(id: String) {
