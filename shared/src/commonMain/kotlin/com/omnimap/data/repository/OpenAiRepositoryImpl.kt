@@ -50,18 +50,35 @@ class OpenAiRepositoryImpl(
         val url = baseUrl ?: return Result.failure(Exception("Base URL not configured"))
         val finalUrl = if (url.endsWith("/")) "${url}chat/completions" else "$url/chat/completions"
 
-        val requestBody = mapOf(
-            "model" to selectedModel,
-            "messages" to listOf(
-                mapOf("role" to "system", "content" to "You are a graph architect. Output ONLY valid JSON."),
-                mapOf("role" to "user", "content" to contextPrompt)
-            ),
-            "response_format" to mapOf("type" to "json_object")
-        )
+        val result = postChatCompletion(finalUrl, contextPrompt, jsonMode = true)
+        // Not every OpenAI-compatible model supports response_format (several of
+        // OpenCode Zen's free models don't). Retry once without it; GraphViewModel
+        // already extracts JSON from fenced or prose-wrapped replies.
+        val status = (result.exceptionOrNull() as? ApiException)?.code
+        return if (status == 400 || status == 422) {
+            postChatCompletion(finalUrl, contextPrompt, jsonMode = false)
+        } else {
+            result
+        }
+    }
+
+    private class ApiException(val code: Int, message: String) : Exception(message)
+
+    private suspend fun postChatCompletion(url: String, contextPrompt: String, jsonMode: Boolean): Result<String> {
+        val requestBody = buildMap<String, Any> {
+            put("model", selectedModel)
+            put(
+                "messages", listOf(
+                    mapOf("role" to "system", "content" to "You are a graph architect. Output ONLY valid JSON."),
+                    mapOf("role" to "user", "content" to contextPrompt)
+                )
+            )
+            if (jsonMode) put("response_format", mapOf("type" to "json_object"))
+        }
 
         val body = gson.toJson(requestBody).toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
-            .url(finalUrl)
+            .url(url)
             .addHeader("Authorization", "Bearer $apiKey")
             .post(body)
             .build()
@@ -70,7 +87,10 @@ class OpenAiRepositoryImpl(
             try {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        return@withContext Result.failure(Exception("API Error: ${response.code} ${response.message}"))
+                        val detail = response.body?.string()?.take(300).orEmpty()
+                        return@withContext Result.failure(
+                            ApiException(response.code, "API Error: ${response.code} ${response.message} $detail".trim())
+                        )
                     }
                     val responseText = response.body?.string() ?: ""
                     val jsonResponse = gson.fromJson(responseText, Map::class.java)

@@ -26,7 +26,13 @@ fun main() = application {
         DashboardViewModel(repository = container.omniMapRepository)
     }
 
-    Window(onCloseRequest = ::exitApplication, title = "OmniMap") {
+    Window(
+        onCloseRequest = {
+            container.shutdown()
+            exitApplication()
+        },
+        title = "OmniMap"
+    ) {
         OmniMapApp(
             graphViewModel = graphViewModel,
             dashboardViewModel = dashboardViewModel,

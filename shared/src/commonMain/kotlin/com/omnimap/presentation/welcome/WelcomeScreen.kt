@@ -2,6 +2,8 @@ package com.omnimap.presentation.welcome
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -21,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+import com.omnimap.data.remote.api.OpenCodeZen
 import com.omnimap.domain.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -39,6 +42,8 @@ fun WelcomeScreen(
     var baseUrl by remember { mutableStateOf("https://api.openai.com/v1/") }
     var expanded by remember { mutableStateOf(false) }
     var isCustomModelSelected by remember { mutableStateOf(false) }
+    var zenModels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isLoadingZenModels by remember { mutableStateOf(false) }
 
     val models = listOf(
         "gemini-3.1-pro",
@@ -46,9 +51,8 @@ fun WelcomeScreen(
         "gemini-2.0-flash",
         "gemini-2.0-pro-exp",
         "llama3.1",
-        "qwen2.5",
-        "Custom..."
-    )
+        "qwen2.5"
+    ) + zenModels + "Custom..."
 
     val steps = listOf(
         OnboardingStep(
@@ -90,6 +94,7 @@ fun WelcomeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -165,6 +170,34 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        isLoadingZenModels = true
+                        zenModels = OpenCodeZen.fetchFreeModels()
+                        isLoadingZenModels = false
+                        isCustomModelSelected = false
+                        selectedModel = zenModels.first()
+                        baseUrl = OpenCodeZen.BASE_URL
+                    }
+                },
+                enabled = !isLoadingZenModels,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(if (isLoadingZenModels) "Loading free models…" else "Use OpenCode Zen free models")
+            }
+
+            if (OpenCodeZen.isZenUrl(baseUrl)) {
+                Text(
+                    text = "OpenCode Zen runs in the cloud: your prompts and graph context are sent to opencode.ai. Paste your OpenCode API key below. The free line-up changes over time.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Box {
                 OutlinedButton(
                     onClick = { expanded = true },
@@ -188,8 +221,10 @@ fun WelcomeScreen(
                                 val modelToUse = if (isCustomModelSelected) customModelName else model
                                 if (modelToUse.startsWith("gemini")) {
                                     baseUrl = ""
-                                } else if (baseUrl.isBlank() || baseUrl.contains("google")) {
-                                    baseUrl = "http://100.115.141.124:4891/v1/" // Default local bridge
+                                } else if (model in zenModels) {
+                                    baseUrl = OpenCodeZen.BASE_URL
+                                } else if (baseUrl.isBlank() || baseUrl.contains("google") || OpenCodeZen.isZenUrl(baseUrl)) {
+                                    baseUrl = "http://localhost:11434/v1/" // Ollama's OpenAI-compatible endpoint
                                 }
                             }
                         )
