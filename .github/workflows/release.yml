@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - main
+  # Build-only on PRs (no release: create-release is limited to main).
+  pull_request:
   workflow_dispatch:
+
+# A new push to a PR cancels its older, now-outdated run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: write
