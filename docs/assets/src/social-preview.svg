@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <pattern id="dotspreview" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="14" cy="14" r="1.5" fill="#36343B"/>
+    </pattern>
+  </defs>
+  <style>
+    .bg{fill:#0F0D13}
+    .word{font:800 96px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5;letter-spacing:-.03em}
+    .tag{font:500 24px system-ui,'Segoe UI',sans-serif;fill:#D0BCFF}
+    .sub{font:400 18px system-ui,'Segoe UI',sans-serif;fill:#938F99}
+    .card{fill:#1D1B20;stroke:#2B2930;stroke-width:2}
+    .edge{stroke:#49454F;stroke-width:3;fill:none}
+    .edge-draft{stroke:#EFB8C8;stroke-width:3;stroke-dasharray:8 6;fill:none}
+    .draft-box{fill:#1D1B20;stroke:#EFB8C8;stroke-width:2.5;stroke-dasharray:8 6}
+    .title{font:700 18px system-ui,sans-serif;fill:#F4F0F5}
+    .kind{font:700 12px ui-monospace,monospace;letter-spacing:.14em}
+    .k-goal{fill:#9ECAFF}.k-project{fill:#D0BCFF}.k-task{fill:#7FD8C4}.k-idea{fill:#F6C86A}.k-agent{fill:#EFB8C8}
+  </style>
+
+  <rect class="bg" width="1280" height="640"/>
+  <rect width="1280" height="640" fill="url(#dotspreview)"/>
+
+  <!-- Graph elements on the right half -->
+  <path class="edge" d="M780,180 L920,240"/>
+  <path class="edge" d="M920,240 L840,360"/>
+  <path class="edge-draft" d="M920,240 L1060,360"/>
+
+  <g transform="translate(680, 140)">
+    <rect class="card" width="180" height="64" rx="14"/>
+    <circle cx="20" cy="20" r="5" stroke="#9ECAFF" stroke-width="3" fill="none"/>
+    <text class="kind k-goal" x="34" y="24">GOAL</text>
+    <text class="title" x="18" y="48">Ship 1.0 Build</text>
+  </g>
+
+  <g transform="translate(840, 210)">
+    <rect class="card" width="190" height="64" rx="14" stroke="#D0BCFF"/>
+    <rect x="15" y="15" width="10" height="10" rx="3" fill="#D0BCFF"/>
+    <text class="kind k-project" x="34" y="24">PROJECT</text>
+    <text class="title" x="18" y="48">Desktop &amp; Mobile</text>
+  </g>
+
+  <g transform="translate(740, 360)">
+    <rect class="card" width="180" height="64" rx="14"/>
+    <rect x="15" y="15" width="10" height="10" fill="#7FD8C4"/>
+    <text class="kind k-task" x="34" y="24">TASK</text>
+    <text class="title" x="18" y="48">Room FTS4 DB</text>
+  </g>
+
+  <g transform="translate(970, 360)">
+    <rect class="draft-box" width="220" height="64" rx="14"/>
+    <path d="M20,15 l5,5 l-5,5 l-5,-5 z" fill="#F6C86A"/>
+    <text class="kind k-idea" x="34" y="24">IDEA · AI DRAFT</text>
+    <text class="title" x="18" y="48">Neural P2P Sync</text>
+  </g>
+
+  <!-- Left Column Branding -->
+  <text class="word" x="90" y="280">OmniMap</text>
+  <text class="tag" x="96" y="336">The Local-First AI-Writable Neural Graph</text>
+  <text class="sub" x="96" y="374">High-bandwidth visual thinking with proactive Gemini 3.1 Architect.</text>
+  <text class="sub" x="96" y="404">Native Android (120Hz) &amp; Desktop (Kotlin Multiplatform).</text>
+
+  <!-- Node Legend Strip -->
+  <g transform="translate(96, 480)" class="kind">
+    <rect x="0" y="-12" width="12" height="12" rx="3" fill="#D0BCFF"/><text class="k-project" x="20" y="0">PROJECT</text>
+    <rect x="120" y="-12" width="12" height="12" fill="#7FD8C4"/><text class="k-task" x="140" y="0">TASK</text>
+    <path d="M236,-12 l6,6 l-6,6 l-6,-6 z" fill="#F6C86A"/><text class="k-idea" x="252" y="0">IDEA</text>
+    <circle cx="330" cy="-6" r="5" stroke="#9ECAFF" stroke-width="2.5" fill="none"/><text class="k-goal" x="344" y="0">GOAL</text>
+    <path d="M410,-12 h7 l4,6 l-4,6 h-7 l-4,-6 z" fill="#EFB8C8"/><text class="k-agent" x="428" y="0">AGENT</text>
+  </g>
+</svg>

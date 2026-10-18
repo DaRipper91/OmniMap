@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="OmniMap System Architecture">
+  <title>OmniMap Multiplatform System Architecture</title>
+  <desc>Kotlin Multiplatform architecture spanning Presentation, Core Domain, and Platform Persistence</desc>
+  <style>
+    .bg{fill:#141218;stroke:#2B2930;stroke-width:1.5}.col{fill:#1D1B20;stroke:#2B2930;stroke-width:1.5}
+    .layer{font:700 11px ui-monospace,monospace;letter-spacing:.18em;fill:#EFB8C8}
+    .h{font:700 18px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5}
+    .pill{fill:#2B2930;rx:6}.pill-txt{font:500 12px ui-monospace,monospace;fill:#D0BCFF}
+    .body{font:400 13px system-ui,sans-serif;fill:#938F99}
+    .accent{font:600 13px system-ui,sans-serif;fill:#7FD8C4}
+    @media (prefers-color-scheme:light){
+      .bg{fill:#FBF8FD;stroke:#E4DCEC}.col{fill:#FFFFFF;stroke:#E4DCEC}
+      .layer{fill:#7D5260}.h{fill:#1D1B20}.pill{fill:#E4DCEC}.pill-txt{fill:#6650A4}
+      .body{fill:#625B71}.accent{fill:#00695C}
+    }
+  </style>
+
+  <rect class="bg" width="1200" height="320" rx="16"/>
+
+  <!-- Column 1: Presentation & Touch -->
+  <g transform="translate(30, 40)">
+    <rect class="col" width="360" height="240" rx="14"/>
+    <text class="layer" x="24" y="34">PRESENTATION LAYER</text>
+    <text class="h" x="24" y="62">Compose Multiplatform</text>
+    <text class="body" x="24" y="90">• Adaptive layout: &lt;840dp phone bottom nav</text>
+    <text class="body" x="24" y="112">• &gt;=840dp desktop NavigationRail &amp; panel</text>
+    <text class="body" x="24" y="134">• 120Hz physics canvas with spring damper</text>
+    <text class="body" x="24" y="156">• Direct border handle drag linking</text>
+    <rect class="pill" x="24" y="184" width="144" height="28" rx="6"/>
+    <text class="pill-txt" x="36" y="202">Jetpack Compose</text>
+    <rect class="pill" x="180" y="184" width="130" height="28" rx="6"/>
+    <text class="pill-txt" x="194" y="202">MVI StateFlow</text>
+  </g>
+
+  <!-- Column 2: Domain & Intelligence Routing -->
+  <g transform="translate(420, 40)">
+    <rect class="col" width="360" height="240" rx="14"/>
+    <text class="layer" x="24" y="34">DOMAIN CORE</text>
+    <text class="h" x="24" y="62">Clean Architecture (KMP)</text>
+    <text class="body" x="24" y="90">• Graph entities: Goal, Project, Task, Idea, Agent</text>
+    <text class="body" x="24" y="112">• O(log n) GraphProcessor for fast traversal</text>
+    <text class="body" x="24" y="134">• ModelRoutingAiRepository dynamic switch</text>
+    <text class="body" x="24" y="156">• Gemini 3.1 Pro SDK + Ollama + CLI agents</text>
+    <rect class="pill" x="24" y="184" width="140" height="28" rx="6"/>
+    <text class="pill-txt" x="36" y="202">Kotlin 2.0 Core</text>
+    <rect class="pill" x="176" y="184" width="150" height="28" rx="6"/>
+    <text class="pill-txt" x="190" y="202">Strictly Idiomatic</text>
+  </g>
+
+  <!-- Column 3: Local-First Drivers -->
+  <g transform="translate(810, 40)">
+    <rect class="col" width="360" height="240" rx="14"/>
+    <text class="layer" x="24" y="34">DATA &amp; PLATFORMS</text>
+    <text class="h" x="24" y="62">Zero-Telemetry Persistence</text>
+    <text class="body" x="24" y="90">• Android: Room SQLite DB + FTS4 Search</text>
+    <text class="body" x="24" y="112">• Android: Native VibratorManager haptic snap</text>
+    <text class="body" x="24" y="134">• Desktop: Debounced JSON graph.json</text>
+    <text class="body" x="24" y="156">• Desktop: CliAiRepository (Claude/Codex/agy)</text>
+    <rect class="pill" x="24" y="184" width="134" height="28" rx="6"/>
+    <text class="pill-txt" x="36" y="202">Room + FTS4</text>
+    <rect class="pill" x="170" y="184" width="150" height="28" rx="6"/>
+    <text class="pill-txt" x="184" y="202">Local-First P2P</text>
+  </g>
+</svg>
