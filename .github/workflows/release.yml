@@ -49,10 +49,22 @@ jobs:
     strategy:
       matrix:
         include:
+          # x86_64 Linux: .deb (Debian/Ubuntu), .rpm (Fedora) and a tarball (Arch/CachyOS, any distro)
           - os: ubuntu-latest
-            task: packageDeb
-            artifact: linux-deb
-            path: "desktop/build/compose/binaries/main/deb/*.deb"
+            task: packageDeb packageRpm packageLinuxTarball
+            artifact: linux-x86_64
+            path: |
+              desktop/build/compose/binaries/main/deb/*.deb
+              desktop/build/compose/binaries/main/rpm/*.rpm
+              desktop/build/compose/binaries/main/tarball/*.tar.gz
+          # aarch64 Linux (Asahi on Apple Silicon, ARM laptops). jpackage only builds
+          # for the CPU it runs on, so this needs an ARM runner.
+          - os: ubuntu-24.04-arm
+            task: packageRpm packageLinuxTarball
+            artifact: linux-aarch64
+            path: |
+              desktop/build/compose/binaries/main/rpm/*.rpm
+              desktop/build/compose/binaries/main/tarball/*.tar.gz
           - os: windows-latest
             task: packageMsi
             artifact: windows-msi
@@ -83,8 +95,16 @@ jobs:
       - name: Grant Execute Permissions for gradlew
         run: chmod +x gradlew
 
+      - name: Install rpmbuild
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
       - name: Build Desktop Package
-        run: ./gradlew :desktop:${{ matrix.task }} --stacktrace
+        shell: bash
+        run: |
+          tasks=""
+          for t in ${{ matrix.task }}; do tasks="$tasks :desktop:$t"; done
+          ./gradlew $tasks --stacktrace
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -123,7 +143,11 @@ jobs:
           prerelease: false
           files: |
             artifacts/android-apk/*.apk
-            artifacts/linux-deb/*.deb
+            artifacts/linux-x86_64/**/*.deb
+            artifacts/linux-x86_64/**/*.rpm
+            artifacts/linux-x86_64/**/*.tar.gz
+            artifacts/linux-aarch64/**/*.rpm
+            artifacts/linux-aarch64/**/*.tar.gz
             artifacts/windows-msi/*.msi
             artifacts/macos-dmg/*.dmg
         env:

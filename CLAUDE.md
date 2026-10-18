@@ -11,8 +11,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 # Run Desktop app (JVM)
 ./gradlew :desktop:run
 
-# Package Desktop distributable (Deb/Msi/Dmg)
+# Package Desktop distributable (Deb/Rpm/Msi/Dmg for the host OS)
 ./gradlew :desktop:package
+
+# Self-contained Linux tarball (Arch/CachyOS/any distro), built for the host CPU
+./gradlew :desktop:packageLinuxTarball
 
 # Build shared module only
 ./gradlew :shared:compileKotlinAndroid
@@ -29,7 +32,7 @@ Three Gradle modules with a Kotlin Multiplatform shared core:
 - **`:shared`** — All business logic and UI. Contains three source sets:
   - `commonMain` — Domain models, repository interfaces, all Compose UI screens and ViewModels, AI integration
   - `androidMain` — Room database, DAOs, `OmniMapRepositoryImpl`, `AndroidHapticEngine`, `AppContainer` DI
-  - `desktopMain` — `MockOmniMapRepository` (in-memory), `DesktopHapticEngine` (no-op), `DesktopAppContainer` DI
+  - `desktopMain` — `FileOmniMapRepository` (JSON file), `DesktopSettingsManager` (properties file), `DesktopHapticEngine` (no-op), `DesktopAppContainer` DI
 
 - **`:androidApp`** — Thin shell: `MainActivity` wires `AppContainer` → ViewModels → `OmniMapApp`. `OmniMapApplication` holds the `AppContainer` singleton.
 
@@ -65,6 +68,8 @@ In `AppContainer` (Android) and `DesktopAppContainer` (Desktop), the key is curr
 ## Platform-Specific Notes
 
 - **Haptics**: `AndroidHapticEngine` uses `VibratorManager` (Android 12+, minSdk 26). `DesktopHapticEngine` is a no-op stub.
-- **Persistence**: Android uses Room; Desktop uses `MockOmniMapRepository` (non-persistent, resets on restart). A SQLDelight or JDBC-based desktop implementation is the next persistence milestone.
+- **Persistence**: Android uses Room. Desktop uses `FileOmniMapRepository`, which keeps the graph in memory and writes `$XDG_DATA_HOME/omnimap/graph.json` (debounced; `DesktopAppContainer.shutdown()` flushes on exit). Desktop settings live in `$XDG_CONFIG_HOME/omnimap/settings.properties`.
+- **AI routing**: `ModelRoutingAiRepository` sends `gemini*` models to `GeminiRepositoryImpl` and everything else to `OpenAiRepositoryImpl` (OpenCode Zen, Ollama, OpenAI…). `OpenCodeZen` holds the Zen base URL and fetches the current free models.
+- **Linux packaging**: see `packaging/README.md` (tarball + install script, Arch PKGBUILD, CI builds for x86_64 and aarch64).
 - **Navigation**: `Screen` sealed class with three routes (`dashboard`, `graph`, `feed`); navigation is handled in `commonMain` using Compose navigation.
 - **DI**: Manual DI via `AppContainer` / `DesktopAppContainer` — no framework (Hilt/Koin) is used.
