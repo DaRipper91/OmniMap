@@ -27,6 +27,7 @@ fun EditNodeDialog(
     ) {
         Card(
             modifier = Modifier
+                .widthIn(max = 560.dp) // don't stretch across a wide desktop window
                 .fillMaxWidth(0.9f)
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),

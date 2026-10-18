@@ -41,6 +41,10 @@ fun DashboardScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
+            // On wide windows, keep the list a readable width instead of stretching edge to edge.
+            .wrapContentWidth(Alignment.CenterHorizontally)
+            .widthIn(max = 840.dp)
+            .fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp, top = 32.dp),

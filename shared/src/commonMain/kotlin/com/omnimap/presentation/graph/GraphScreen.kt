@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -13,20 +15,30 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.omnimap.presentation.graph.chat.ChatContent
 import com.omnimap.presentation.graph.chat.IntelligentBottomSheet
 import com.omnimap.presentation.graph.ui.CreateNodeDialog
 import com.omnimap.presentation.graph.ui.EditNodeDialog
 import com.omnimap.presentation.graph.ui.OmniMapCanvas
 
+@Composable
+fun GraphScreen(viewModel: GraphViewModel, isWide: Boolean = false) {
+    if (isWide) WideGraphScreen(viewModel) else CompactGraphScreen(viewModel)
+}
+
+/** Phones: canvas with the Architect in a bottom sheet. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GraphScreen(viewModel: GraphViewModel) {
+private fun CompactGraphScreen(viewModel: GraphViewModel) {
     val state by viewModel.state.collectAsState()
-    
+
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = rememberStandardBottomSheetState(
             initialValue = SheetValue.PartiallyExpanded
@@ -49,106 +61,156 @@ fun GraphScreen(viewModel: GraphViewModel) {
             }
         )
 
-        // Draft Actions Bar
-        val hasDrafts = state.nodes.values.any { it.isDraft } || state.edges.any { it.isDraft }
-        if (hasDrafts) {
-            Surface(
+        // Padding to avoid overlap with the sheet peek
+        GraphOverlays(viewModel = viewModel, state = state, fabBottomPadding = 80.dp)
+    }
+}
+
+/** Laptops and desktops: canvas with the Architect in a collapsible side panel. */
+@Composable
+private fun WideGraphScreen(viewModel: GraphViewModel) {
+    val state by viewModel.state.collectAsState()
+    var isPanelOpen by remember { mutableStateOf(true) }
+
+    Row(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+            OmniMapCanvas(viewModel = viewModel)
+            GraphOverlays(viewModel = viewModel, state = state, fabBottomPadding = 16.dp)
+
+            IconButton(
+                onClick = { isPanelOpen = !isPanelOpen },
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 80.dp) // Below properties panel if it exists
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(24.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                tonalElevation = 8.dp
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        "AI Draft active",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onTertiaryContainer
-                    )
-                    Button(
-                        onClick = { viewModel.processIntent(GraphIntent.OnCommitDrafts) },
-                        contentPadding = PaddingValues(horizontal = 12.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Commit")
-                    }
-                    OutlinedButton(
-                        onClick = { viewModel.processIntent(GraphIntent.OnDiscardDrafts) },
-                        contentPadding = PaddingValues(horizontal = 12.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Discard")
-                    }
-                }
+                Icon(
+                    if (isPanelOpen) Icons.AutoMirrored.Filled.KeyboardArrowRight else Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                    contentDescription = if (isPanelOpen) "Hide Architect panel" else "Show Architect panel",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
 
-        // FAB for creating nodes
-        FloatingActionButton(
-            onClick = { viewModel.processIntent(GraphIntent.OnCreateNodeRequest(true)) },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 16.dp, bottom = 80.dp), // Padding to avoid overlap with sheet
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = "Add Node")
+        if (isPanelOpen) {
+            VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Surface(
+                modifier = Modifier.width(380.dp).fillMaxHeight(),
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                ChatContent(
+                    state = state,
+                    onPromptSubmitted = { prompt -> viewModel.processIntent(GraphIntent.OnSubmitPrompt(prompt)) },
+                    onRetryClicked = { viewModel.processIntent(GraphIntent.RetryQueuedRequests) },
+                    modifier = Modifier.fillMaxSize().padding(8.dp)
+                )
+            }
         }
+    }
+}
 
-        // Suggestion 3 Flavor: The "Properties Panel" Row
-        if (state.selectedNodeId != null) {
+/** Draft bar, properties panel, FAB and dialogs, drawn over the canvas in both layouts. */
+@Composable
+private fun BoxScope.GraphOverlays(viewModel: GraphViewModel, state: GraphState, fabBottomPadding: Dp) {
+    // Draft Actions Bar
+    val hasDrafts = state.nodes.values.any { it.isDraft } || state.edges.any { it.isDraft }
+    if (hasDrafts) {
+        Surface(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 80.dp) // Below properties panel if it exists
+                .padding(horizontal = 16.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.tertiaryContainer,
+            tonalElevation = 8.dp
+        ) {
             Row(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = state.nodes[state.selectedNodeId]?.title ?: "",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(end = 16.dp)
+                    "AI Draft active",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
                 )
-                IconButton(onClick = { viewModel.processIntent(GraphIntent.OnEditNodeRequest(state.selectedNodeId)) }) {
-                    Icon(Icons.Filled.Edit, contentDescription = "Edit Node", tint = MaterialTheme.colorScheme.primary)
+                Button(
+                    onClick = { viewModel.processIntent(GraphIntent.OnCommitDrafts) },
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Commit")
                 }
-                IconButton(onClick = { viewModel.processIntent(GraphIntent.OnNodeDeleted(state.selectedNodeId!!)) }) {
-                    Icon(Icons.Filled.Delete, contentDescription = "Delete Node", tint = MaterialTheme.colorScheme.error)
+                OutlinedButton(
+                    onClick = { viewModel.processIntent(GraphIntent.OnDiscardDrafts) },
+                    contentPadding = PaddingValues(horizontal = 12.dp),
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Discard")
                 }
             }
         }
+    }
 
-        // Suggestion 1 & 2 Flavor: The Full-Screen / Large Floating Editor
-        state.editingNode?.let { node ->
-            EditNodeDialog(
-                node = node,
-                onDismiss = { viewModel.processIntent(GraphIntent.OnEditNodeRequest(null)) },
-                onSave = { title, desc ->
-                    viewModel.processIntent(GraphIntent.OnNodeUpdated(node.id, title, desc))
-                }
-            )
-        }
+    // FAB for creating nodes
+    FloatingActionButton(
+        onClick = { viewModel.processIntent(GraphIntent.OnCreateNodeRequest(true)) },
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .padding(end = 16.dp, bottom = fabBottomPadding),
+        containerColor = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Icon(Icons.Filled.Add, contentDescription = "Add Node")
+    }
 
-        if (state.isCreatingNode) {
-            CreateNodeDialog(
-                onDismiss = { viewModel.processIntent(GraphIntent.OnCreateNodeRequest(false)) },
-                onSave = { title, desc, type ->
-                    viewModel.processIntent(GraphIntent.OnNodeCreated(type, title, desc, 250f, 250f))
-                    viewModel.processIntent(GraphIntent.OnCreateNodeRequest(false))
-                }
+    // Suggestion 3 Flavor: The "Properties Panel" Row
+    if (state.selectedNodeId != null) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = state.nodes[state.selectedNodeId]?.title ?: "",
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(end = 16.dp)
             )
+            IconButton(onClick = { viewModel.processIntent(GraphIntent.OnEditNodeRequest(state.selectedNodeId)) }) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit Node", tint = MaterialTheme.colorScheme.primary)
+            }
+            IconButton(onClick = { viewModel.processIntent(GraphIntent.OnNodeDeleted(state.selectedNodeId)) }) {
+                Icon(Icons.Filled.Delete, contentDescription = "Delete Node", tint = MaterialTheme.colorScheme.error)
+            }
         }
+    }
+
+    // Suggestion 1 & 2 Flavor: The Full-Screen / Large Floating Editor
+    state.editingNode?.let { node ->
+        EditNodeDialog(
+            node = node,
+            onDismiss = { viewModel.processIntent(GraphIntent.OnEditNodeRequest(null)) },
+            onSave = { title, desc ->
+                viewModel.processIntent(GraphIntent.OnNodeUpdated(node.id, title, desc))
+            }
+        )
+    }
+
+    if (state.isCreatingNode) {
+        CreateNodeDialog(
+            onDismiss = { viewModel.processIntent(GraphIntent.OnCreateNodeRequest(false)) },
+            onSave = { title, desc, type ->
+                viewModel.processIntent(GraphIntent.OnNodeCreated(type, title, desc, 250f, 250f))
+                viewModel.processIntent(GraphIntent.OnCreateNodeRequest(false))
+            }
+        )
     }
 }

@@ -12,6 +12,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.omnimap.presentation.graph.GraphState
@@ -24,6 +30,12 @@ fun ChatContent(
     modifier: Modifier = Modifier
 ) {
     var promptText by remember { mutableStateOf("") }
+    val submit = {
+        if (promptText.isNotBlank()) {
+            onPromptSubmitted(promptText)
+            promptText = ""
+        }
+    }
     
     val contextTitle = if (state.selectedNodeId != null) {
         val nodeTitle = state.nodes[state.selectedNodeId]?.title ?: "Unknown"
@@ -104,7 +116,17 @@ fun ChatContent(
             TextField(
                 value = promptText,
                 onValueChange = { promptText = it },
-                modifier = Modifier.weight(1f),
+                // Hardware keyboards: Enter sends, Shift+Enter starts a new line.
+                modifier = Modifier
+                    .weight(1f)
+                    .onPreviewKeyEvent { event ->
+                        if (event.key == Key.Enter && !event.isShiftPressed) {
+                            if (event.type == KeyEventType.KeyDown) submit()
+                            true
+                        } else {
+                            false
+                        }
+                    },
                 placeholder = { Text("Instruct the architect...") },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -115,12 +137,7 @@ fun ChatContent(
                 shape = RoundedCornerShape(24.dp)
             )
             IconButton(
-                onClick = {
-                    if (promptText.isNotBlank()) {
-                        onPromptSubmitted(promptText)
-                        promptText = ""
-                    }
-                },
+                onClick = submit,
                 modifier = Modifier.padding(start = 8.dp)
             ) {
                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = MaterialTheme.colorScheme.primary)

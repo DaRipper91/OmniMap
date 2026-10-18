@@ -72,4 +72,6 @@ In `AppContainer` (Android) and `DesktopAppContainer` (Desktop), the key is curr
 - **AI routing**: `ModelRoutingAiRepository` sends `gemini*` models to `GeminiRepositoryImpl` and everything else to `OpenAiRepositoryImpl` (OpenCode Zen, Ollama, OpenAI…). `OpenCodeZen` holds the Zen base URL and fetches the current free models.
 - **Linux packaging**: see `packaging/README.md` (tarball + install script, Arch PKGBUILD, CI builds for x86_64 and aarch64).
 - **Navigation**: `Screen` sealed class with three routes (`dashboard`, `graph`, `feed`); navigation is handled in `commonMain` using Compose navigation.
+- **Adaptive layout**: `OmniMapApp` switches at 840dp window width. Narrow: bottom `NavigationBar`, Architect chat in a bottom sheet. Wide (laptops/desktops): `NavigationRail`, Architect chat in a collapsible 380dp side panel (`GraphScreen(isWide = true)`).
+- **Canvas input** (`OmniMapCanvas`): drag/pinch on touch; scroll to pan and Ctrl/Cmd+scroll to zoom toward the pointer; keyboard shortcuts once the canvas has focus (N new, E/Enter edit, Delete/Backspace delete, Esc deselect, Ctrl/Cmd + `=` `-` `0` zoom). In the chat field, Enter sends and Shift+Enter adds a line.
 - **DI**: Manual DI via `AppContainer` / `DesktopAppContainer` — no framework (Hilt/Koin) is used.
