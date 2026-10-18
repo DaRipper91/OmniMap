@@ -43,4 +43,5 @@ Uninstalling never removes these.
 ## Troubleshooting
 
 - **Blank or flickering window** (possible on Asahi's GPU drivers or in VMs): force
-  software rendering with `SKIKO_RENDER_API=SOFTWARE omnimap`.
+  software rendering with `SKIKO_RENDER_API=SOFTWARE omnimap`. The `.rpm` and `.deb` don't add
+  `omnimap` to the PATH; use `/opt/omnimap/bin/OmniMap` there (they do add a menu entry).
