@@ -35,7 +35,7 @@ class FileOmniMapRepository(
         val nodes: List<Node> = emptyList(),
         val edges: List<Edge> = emptyList(),
         val queuedRequests: List<QueuedAiRequest> = emptyList(),
-        val version: Int = 1
+        val version: Int = CURRENT_VERSION
     )
 
     private val gson: Gson = GsonBuilder().create()
@@ -54,7 +54,15 @@ class FileOmniMapRepository(
         if (!file.exists()) return
         try {
             val snapshot = gson.fromJson(file.readText(), Snapshot::class.java) ?: return
-            nodes.value = snapshot.nodes.orEmpty().associateBy { it.id }
+            var loaded = snapshot.nodes.orEmpty()
+            if (snapshot.version < 2) {
+                // Version 1 stored positions in screen px; they are dp now. Divide by the
+                // display scale they were saved at so the layout looks the same.
+                val scale = DesktopPaths.displayScale()
+                loaded = loaded.map { it.copy(x = it.x / scale, y = it.y / scale) }
+                scheduleSave()
+            }
+            nodes.value = loaded.associateBy { it.id }
             edges.value = snapshot.edges.orEmpty()
             queuedRequests.value = snapshot.queuedRequests.orEmpty()
         } catch (e: Exception) {
@@ -168,5 +176,7 @@ class FileOmniMapRepository(
     private companion object {
         const val TAG = "FileOmniMapRepository"
         const val SAVE_DELAY_MS = 400L
+        /** 2: node positions are dp (version 1 stored screen px). */
+        const val CURRENT_VERSION = 2
     }
 }

@@ -2,6 +2,8 @@ package com.omnimap.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.omnimap.core.connectivity.ConnectivityObserver
 import com.omnimap.core.connectivity.NetworkConnectivityObserver
 import com.omnimap.core.haptics.AndroidHapticEngine
@@ -29,7 +31,10 @@ class AppContainer(private val context: Context) {
             context,
             OmniMapDatabase::class.java,
             "omnimap_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(pxToDpMigration(context.resources.displayMetrics.density))
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     val hapticEngine: HapticEngine by lazy {
@@ -75,5 +80,12 @@ class AppContainer(private val context: Context) {
             ),
             settingsManager = settingsManager
         )
+    }
+}
+
+/** Version 3 stored node positions in screen px; version 4 stores dp. Same schema. */
+private fun pxToDpMigration(density: Float) = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("UPDATE nodes SET x = x / ?, y = y / ?", arrayOf<Any>(density, density))
     }
 }

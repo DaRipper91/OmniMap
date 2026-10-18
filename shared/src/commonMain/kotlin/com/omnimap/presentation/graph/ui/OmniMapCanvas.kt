@@ -18,6 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.PointMode
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
@@ -44,6 +46,7 @@ import kotlin.math.pow
 
 private const val SCROLL_PAN_STEP = 40f
 private val GridSpacing = 24.dp
+private const val MIN_GRID_STEP_PX = 20f
 
 /**
  * The graph canvas.
@@ -98,20 +101,22 @@ fun OmniMapCanvas(
             .background(MaterialTheme.colorScheme.background)
             // Dot grid that moves and scales with the canvas, so panning has a visible reference.
             .drawBehind {
+                // Thin the grid when zoomed out, and draw it in one call: per-dot draws lag when panning.
                 var step = GridSpacing.toPx() * canvasState.scale
-                while (step < 12f) step *= 2
-                val radius = 1.2.dp.toPx()
+                while (step < MIN_GRID_STEP_PX) step *= 2
                 val startX = ((canvasState.offset.x % step) + step) % step
                 val startY = ((canvasState.offset.y % step) + step) % step
+                val points = ArrayList<Offset>(((size.width / step + 1) * (size.height / step + 1)).toInt())
                 var x = startX
                 while (x < size.width) {
                     var y = startY
                     while (y < size.height) {
-                        drawCircle(gridColor, radius, Offset(x, y))
+                        points += Offset(x, y)
                         y += step
                     }
                     x += step
                 }
+                drawPoints(points, PointMode.Points, gridColor, strokeWidth = 2.4.dp.toPx(), cap = StrokeCap.Round)
             }
             .onSizeChanged { canvasState.viewport = it }
             .focusRequester(focusRequester)

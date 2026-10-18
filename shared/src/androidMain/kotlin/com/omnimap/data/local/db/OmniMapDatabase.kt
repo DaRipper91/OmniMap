@@ -10,7 +10,7 @@ import com.omnimap.domain.model.Edge
 import com.omnimap.domain.model.Node
 import com.omnimap.domain.model.QueuedAiRequest
 
-@Database(entities = [Node::class, Edge::class, NodeFts::class, QueuedAiRequest::class], version = 3, exportSchema = false)
+@Database(entities = [Node::class, Edge::class, NodeFts::class, QueuedAiRequest::class], version = 4, exportSchema = false)
 abstract class OmniMapDatabase : RoomDatabase() {
     abstract fun nodeDao(): NodeDao
     abstract fun edgeDao(): EdgeDao

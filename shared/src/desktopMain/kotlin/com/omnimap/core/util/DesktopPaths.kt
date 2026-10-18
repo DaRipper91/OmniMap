@@ -44,6 +44,15 @@ object DesktopPaths {
         return true
     }
 
+    /** The primary screen's UI scale (2.0 on a 2x HiDPI display), or 1 when headless. */
+    fun displayScale(): Float = try {
+        java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment()
+            .defaultScreenDevice.defaultConfiguration.defaultTransform.scaleX.toFloat()
+            .takeIf { it > 0f } ?: 1f
+    } catch (_: java.awt.HeadlessException) {
+        1f
+    }
+
     /** chmod 600 where the filesystem supports POSIX permissions; a no-op on Windows. */
     fun restrictToOwner(file: File) {
         try {
