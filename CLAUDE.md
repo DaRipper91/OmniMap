@@ -46,8 +46,8 @@ Three Gradle modules with a Kotlin Multiplatform shared core:
 
 2. **Data** (`androidMain/data/`, `desktopMain/data/`, `commonMain/data/`)
    - Android: Room DB (`OmniMapDatabase`) with `NodeDao`/`EdgeDao`; `NodeFts` entity for full-text search
-   - Desktop: `MockOmniMapRepository` holds state in `MutableStateFlow` maps
-   - Both: `GeminiRepositoryImpl` (in `commonMain`) calls Gemini 1.5 Pro SDK and returns structured JSON
+   - Desktop: `FileOmniMapRepository` holds state in `MutableStateFlow`s and persists it to a JSON file
+   - Both: `ModelRoutingAiRepository` (in `commonMain`) routes to `GeminiRepositoryImpl` (Gemini SDK) or `OpenAiRepositoryImpl` (any OpenAI-compatible API, e.g. OpenCode Zen or Ollama)
 
 3. **Presentation** (`commonMain/presentation/`) — Three screens sharing a common `OmniMapApp` composable:
    - `GraphScreen` / `GraphViewModel` / `GraphState` / `GraphIntent` — MVI pattern for the interactive canvas; handles node drag, create, edit, delete, edge creation, and AI prompt submission
@@ -63,7 +63,7 @@ Three Gradle modules with a Kotlin Multiplatform shared core:
 GEMINI_API_KEY=your_key_here
 ```
 
-In `AppContainer` (Android) and `DesktopAppContainer` (Desktop), the key is currently hardcoded as a placeholder — replace with a `local.properties` read before shipping.
+In practice the key is entered in the Welcome screen's setup step and saved by the platform `SettingsManager` (DataStore on Android, `~/.config/omnimap/settings.properties` on Desktop).
 
 ## Platform-Specific Notes
 
