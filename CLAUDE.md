@@ -63,7 +63,7 @@ Three Gradle modules with a Kotlin Multiplatform shared core:
 GEMINI_API_KEY=your_key_here
 ```
 
-In practice the key is entered in the Welcome screen's setup step and saved by the platform `SettingsManager` (DataStore on Android, `~/.config/omnimap/settings.properties` on Desktop).
+In practice the key is entered in the Welcome screen's setup step and saved by the platform `SettingsManager` (SharedPreferences on Android, `~/.config/omnimap/settings.properties` on Desktop).
 
 ## Platform-Specific Notes
 
