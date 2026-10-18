@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
                 graphViewModel = graphViewModel,
                 dashboardViewModel = dashboardViewModel,
                 authRepository = container.authRepository,
+                settingsManager = container.settingsManager,
                 onImportRequest = { importLauncher.launch(arrayOf("application/json")) },
                 onExportRequest = { json ->
                     jsonToExport = json

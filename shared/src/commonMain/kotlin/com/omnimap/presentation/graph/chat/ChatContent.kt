@@ -37,11 +37,12 @@ fun ChatContent(
         }
     }
     
-    val contextTitle = if (state.selectedNodeId != null) {
-        val nodeTitle = state.nodes[state.selectedNodeId]?.title ?: "Unknown"
-        "Talking about: $nodeTitle"
+    val selectedTitle = state.selectedNodeId?.let { state.nodes[it]?.title }
+    val contextTitle = if (selectedTitle != null) "Talking about: $selectedTitle" else "Global AI Architect"
+    val starters = if (selectedTitle != null) {
+        listOf("Break “$selectedTitle” into tasks", "What could block “$selectedTitle”?", "Suggest ideas related to “$selectedTitle”")
     } else {
-        "Global AI Architect"
+        listOf("Break my goal into tasks", "What am I missing?", "Suggest links between my ideas", "Summarise my graph")
     }
 
     Column(
@@ -67,7 +68,7 @@ fun ChatContent(
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${state.queuedRequests.size} requests queued.",
+                    text = if (state.queuedRequests.size == 1) "1 request waiting to retry." else "${state.queuedRequests.size} requests waiting to retry.",
                     color = MaterialTheme.colorScheme.tertiary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.weight(1f)
@@ -87,23 +88,53 @@ fun ChatContent(
         ) {
             if (state.isAiThinking) {
                 item {
-                    Text("Architect is thinking...", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f), modifier = Modifier.padding(8.dp))
+                    Text("Architect is thinking...", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), modifier = Modifier.padding(8.dp))
                 }
             }
 
-            items(state.chatHistory.reversed()) { msg ->
+            items(state.chatHistory.reversed(), key = { it.id }) { msg ->
                 val align = if (msg.isFromUser) Alignment.CenterEnd else Alignment.CenterStart
-                val bg = if (msg.isFromUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
-                val textColor = if (msg.isFromUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
+                val bg = when {
+                    msg.isFromUser -> MaterialTheme.colorScheme.primaryContainer
+                    msg.isError -> MaterialTheme.colorScheme.errorContainer
+                    else -> MaterialTheme.colorScheme.surfaceContainerHighest
+                }
+                val textColor = when {
+                    msg.isFromUser -> MaterialTheme.colorScheme.onPrimaryContainer
+                    msg.isError -> MaterialTheme.colorScheme.onErrorContainer
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
                 
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = align) {
-                    Box(
+                    Column(
                         modifier = Modifier
                             .padding(4.dp)
+                            .widthIn(max = 320.dp)
                             .background(bg, RoundedCornerShape(12.dp))
                             .padding(12.dp)
                     ) {
                         Text(text = msg.text, color = textColor)
+                        if (msg.isError && state.queuedRequests.isNotEmpty()) {
+                            TextButton(onClick = onRetryClicked, contentPadding = PaddingValues(horizontal = 0.dp)) {
+                                Text("Retry", color = textColor, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Empty chat: say what the Architect does and offer starting points.
+            if (state.chatHistory.isEmpty() && !state.isAiThinking) {
+                item {
+                    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            "Ask the Architect to grow your map. It proposes nodes and links as drafts you commit or discard.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                        )
+                        starters.forEach { starter ->
+                            SuggestionChip(onClick = { onPromptSubmitted(starter) }, label = { Text(starter) })
+                        }
                     }
                 }
             }
@@ -128,11 +159,14 @@ fun ChatContent(
                         }
                     },
                 placeholder = { Text("Instruct the architect...") },
+                // A lifted fill with no underline, so the field reads as a field on the panel.
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+                    unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent
                 ),
                 shape = RoundedCornerShape(24.dp)
             )

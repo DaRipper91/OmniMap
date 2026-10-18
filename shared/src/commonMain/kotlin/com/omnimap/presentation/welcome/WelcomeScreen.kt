@@ -1,36 +1,45 @@
 package com.omnimap.presentation.welcome
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.Hub
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-
-import com.omnimap.data.remote.api.AgentCli
-import com.omnimap.data.remote.api.LocalOllama
-import com.omnimap.data.remote.api.OpenCodeZen
-import com.omnimap.data.remote.api.requiresApiKey
 import com.omnimap.domain.repository.AuthRepository
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+private data class IntroStep(val title: String, val description: String, val icon: ImageVector)
+
+private val introSteps = listOf(
+    IntroStep(
+        title = "Your mind, mapped",
+        description = "OmniMap is a graph of your goals, projects, tasks and ideas, linked the way you think. " +
+            "It lives on this device: no account, no telemetry.",
+        icon = Icons.Filled.Hub
+    ),
+    IntroStep(
+        title = "The Architect drafts. You decide.",
+        description = "Ask the AI Architect to break down a goal or find what's missing. Its suggestions appear as " +
+            "dashed drafts on your map that you commit or discard.",
+        icon = Icons.Filled.Psychology
+    )
+)
+
+/**
+ * First-run flow: two short intro steps (skippable), then choosing an AI provider.
+ * The action bar is pinned to the bottom so Finish is always visible.
+ */
 @Composable
 fun WelcomeScreen(
     authRepository: AuthRepository,
@@ -38,370 +47,102 @@ fun WelcomeScreen(
     onConfigurationFinished: (String, String, String?) -> Unit
 ) {
     var step by remember { mutableStateOf(0) }
-    var apiKey by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("gemini-3.1-pro") }
+    val setupStep = introSteps.size
+    val isSetup = step == setupStep
+    val picker = rememberProviderPickerState(agentClis)
     val scope = rememberCoroutineScope()
-    val currentUser by authRepository.currentUser.collectAsState()
-    var customModelName by remember { mutableStateOf("") }
-    var baseUrl by remember { mutableStateOf("https://api.openai.com/v1/") }
-    var expanded by remember { mutableStateOf(false) }
-    var isCustomModelSelected by remember { mutableStateOf(false) }
-    var zenModels by remember { mutableStateOf<List<String>>(emptyList()) }
-    var isLoadingZenModels by remember { mutableStateOf(false) }
-    var ollamaModels by remember { mutableStateOf<List<String>>(emptyList()) }
-    var ollamaStatus by remember { mutableStateOf<String?>(null) }
 
-    val models = listOf(
-        "gemini-3.1-pro",
-        "gemini-3.1-flash",
-        "gemini-2.0-flash",
-        "gemini-2.0-pro-exp",
-        "llama3.1",
-        "qwen2.5"
-    ) + agentClis + ollamaModels + zenModels + "Custom..."
-
-    val steps = listOf(
-        OnboardingStep(
-            title = "Your Mind, Visualized",
-            description = "OmniMap transforms your fleeting thoughts into a persistent, native graph. Capture ideas, tasks, and complex goals with sub-millisecond tactile precision.",
-            icon = Icons.Filled.AutoAwesome
-        ),
-        OnboardingStep(
-            title = "The AI Architect",
-            description = "Choose between Gemini 3.1, Llama 3.1, or Qwen 2.5. The Architect doesn't just chat—it proactively proposes mutations to expand and organize your mind-map.",
-            icon = Icons.Filled.Psychology
-        ),
-        OnboardingStep(
-            title = "Graph Mutations",
-            description = "Experience real-time evolution. As you dialogue with the Architect, it drafts new nodes and connections, effectively building your workspace alongside you.",
-            icon = Icons.Filled.Draw
-        ),
-        OnboardingStep(
-            title = "Tactile Hardware Engine",
-            description = "Optimized for 120Hz native execution. Feel every connection with deep haptic feedback integration, designed for immediate cognitive flow.",
-            icon = Icons.Filled.Vibration
-        ),
-        OnboardingStep(
-            title = "Privacy by Design",
-            description = "Your graph data stays in a local Room database. Your API keys are stored only on this device. Total control, zero telemetry.",
-            icon = Icons.Filled.Lock
-        ),
-        OnboardingStep(
-            title = "Intelligence Setup",
-            description = "Select your preferred brain and enter your API key to initialize the Mind-Map engine.",
-            icon = Icons.Filled.Key,
-            isLast = true
-        )
-    )
-
-    val currentStep = steps[step]
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Icon(
-            imageVector = currentStep.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(100.dp)
-        )
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Text(
-            text = currentStep.title,
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center
-        )
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = currentStep.description,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-        
-        if (currentStep.isLast) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(
-                onClick = {
-                    scope.launch {
-                        authRepository.login().onSuccess { user ->
-                            apiKey = user.accessToken ?: ""
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4285F4),
-                    contentColor = Color.White
-                )
-            ) {
-                Icon(Icons.Filled.Key, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Login with Google")
-            }
-
-            if (currentUser != null) {
-                Text(
-                    text = "Logged in as ${currentUser?.name}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            Text(
-                text = "OR ENTER API KEY MANUALLY",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            if (agentClis.isNotEmpty()) {
-                Text(
-                    text = "USE AN INSTALLED AGENT (NO KEY NEEDED)",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                agentClis.forEach { cli ->
-                    OutlinedButton(
-                        onClick = {
-                            isCustomModelSelected = false
-                            selectedModel = cli
-                            baseUrl = ""
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(AgentCli.label(cli))
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            OutlinedButton(
-                onClick = {
-                    scope.launch {
-                        ollamaStatus = "Looking for Ollama…"
-                        val url = if (LocalOllama.isOllama(baseUrl)) baseUrl else LocalOllama.BASE_URL
-                        ollamaModels = LocalOllama.fetchModels(url)
-                        if (ollamaModels.isEmpty()) {
-                            ollamaStatus = "No Ollama models found at $url. Is `ollama serve` running?"
-                        } else {
-                            ollamaStatus = null
-                            isCustomModelSelected = false
-                            selectedModel = ollamaModels.first()
-                            baseUrl = url
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Use local Ollama models")
-            }
-
-            ollamaStatus?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = {
-                    scope.launch {
-                        isLoadingZenModels = true
-                        zenModels = OpenCodeZen.fetchFreeModels()
-                        isLoadingZenModels = false
-                        isCustomModelSelected = false
-                        selectedModel = zenModels.first()
-                        baseUrl = OpenCodeZen.BASE_URL
-                    }
-                },
-                enabled = !isLoadingZenModels,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(if (isLoadingZenModels) "Loading free models…" else "Use OpenCode Zen free models")
-            }
-
-            if (OpenCodeZen.isZenUrl(baseUrl)) {
-                Text(
-                    text = "OpenCode Zen runs in the cloud: your prompts and graph context are sent to opencode.ai. Paste your OpenCode API key below. The free line-up changes over time.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Box {
-                OutlinedButton(
-                    onClick = { expanded = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Model: ${if (isCustomModelSelected) "Custom" else if (AgentCli.isCli(selectedModel)) AgentCli.label(selectedModel) else selectedModel}")
-                }
-                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    models.forEach { model ->
-                        DropdownMenuItem(
-                            text = { Text(if (AgentCli.isCli(model)) AgentCli.label(model) else model) },
-                            onClick = {
-                                if (model == "Custom...") {
-                                    isCustomModelSelected = true
-                                } else {
-                                    isCustomModelSelected = false
-                                    selectedModel = model
-                                }
-                                expanded = false
-                                
-                                val modelToUse = if (isCustomModelSelected) customModelName else model
-                                if (modelToUse.startsWith("gemini") || AgentCli.isCli(modelToUse)) {
-                                    baseUrl = ""
-                                } else if (model in ollamaModels) {
-                                    if (!LocalOllama.isOllama(baseUrl)) baseUrl = LocalOllama.BASE_URL
-                                } else if (model in zenModels) {
-                                    baseUrl = OpenCodeZen.BASE_URL
-                                } else if (baseUrl.isBlank() || baseUrl.contains("google") || OpenCodeZen.isZenUrl(baseUrl)) {
-                                    baseUrl = "http://localhost:11434/v1/" // Ollama's OpenAI-compatible endpoint
-                                }
-                            }
-                        )
-                    }
-                }
-            }
-
-            if (isCustomModelSelected) {
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = customModelName,
-                    onValueChange = { customModelName = it },
-                    label = { Text("Custom Model Name (e.g. gemini-3.1-pro)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            val currentEffectiveModel = if (isCustomModelSelected) customModelName else selectedModel
-            if (!currentEffectiveModel.startsWith("gemini") && !AgentCli.isCli(currentEffectiveModel)) {
-                OutlinedTextField(
-                    value = baseUrl,
-                    onValueChange = { baseUrl = it },
-                    label = { Text("Base URL (OpenAI Compatible)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                    )
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            if (requiresApiKey(currentEffectiveModel, baseUrl)) OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("API Key") },
-                placeholder = { Text("Paste your key here...") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-                )
-            )
-        }
-        
-        Spacer(modifier = Modifier.height(48.dp))
-        
-        // Progress indicators
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            steps.forEachIndexed { index, _ ->
-                Box(
-                    modifier = Modifier
-                        .size(if (index == step) 12.dp else 8.dp)
-                        .background(
-                            if (index == step) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
-                            RoundedCornerShape(50)
-                        )
-                )
-            }
-        }
-        
-        Spacer(modifier = Modifier.height(32.dp))
-        
-        Button(
-            onClick = {
-                if (currentStep.isLast) {
-                    val finalModel = if (isCustomModelSelected) customModelName else selectedModel
-                    if (finalModel.isNotBlank() && (apiKey.isNotBlank() || !requiresApiKey(finalModel, baseUrl))) {
-                        onConfigurationFinished(apiKey, finalModel, baseUrl.takeIf { it.isNotBlank() })
-                    }
-                } else {
-                    step++
-                }
-            },
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ),
-            enabled = !currentStep.isLast || (
-                (!isCustomModelSelected || customModelName.isNotBlank()) &&
-                    (apiKey.isNotBlank() || !requiresApiKey(if (isCustomModelSelected) customModelName else selectedModel, baseUrl))
-                )
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        Box(
+            modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            contentAlignment = Alignment.TopCenter
         ) {
-            Text(
-                if (currentStep.isLast) "Initialize Mind-Map" else "Next",
-                fontWeight = FontWeight.Bold
-            )
+            Column(
+                modifier = Modifier.widthIn(max = 560.dp).fillMaxWidth().padding(horizontal = 24.dp, vertical = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                if (!isSetup) {
+                    val intro = introSteps[step]
+                    Spacer(Modifier.height(48.dp))
+                    Icon(intro.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(88.dp))
+                    Spacer(Modifier.height(32.dp))
+                    Text(
+                        intro.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        intro.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f)
+                    )
+                } else {
+                    Text(
+                        "Choose the Architect's brain",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        "You can change this any time in Settings.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
+                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 24.dp)
+                    )
+                    ProviderPicker(picker, Modifier.fillMaxWidth())
+
+                    if (authRepository.isLoginAvailable) {
+                        TextButton(
+                            onClick = { scope.launch { authRepository.login().onSuccess { picker.apiKey = it.accessToken.orEmpty() } } },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) { Text("Sign in with Google instead") }
+                    }
+                }
+            }
         }
 
-        if (step > 0) {
-            TextButton(
-                onClick = { step-- },
-                modifier = Modifier.padding(top = 8.dp)
+        // Pinned action bar
+        Surface(color = MaterialTheme.colorScheme.surfaceContainer, tonalElevation = 2.dp) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Back", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f))
+                if (step > 0) {
+                    TextButton(onClick = { step-- }) { Text("Back") }
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    (0..setupStep).forEach { index ->
+                        Box(
+                            Modifier
+                                .size(if (index == step) 10.dp else 8.dp)
+                                .background(
+                                    if (index == step) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    RoundedCornerShape(50)
+                                )
+                        )
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                if (!isSetup) {
+                    TextButton(onClick = { step = setupStep }) { Text("Skip") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(onClick = { step++ }) { Text("Next") }
+                } else {
+                    val choice = picker.choice
+                    Button(
+                        onClick = { choice?.let { onConfigurationFinished(it.apiKey, it.model, it.baseUrl) } },
+                        enabled = choice != null
+                    ) { Text("Finish setup", fontWeight = FontWeight.Bold) }
+                }
             }
         }
     }
 }
-
-private data class OnboardingStep(
-    val title: String,
-    val description: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val isLast: Boolean = false
-)

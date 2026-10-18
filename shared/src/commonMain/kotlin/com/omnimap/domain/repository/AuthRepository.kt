@@ -13,6 +13,8 @@ data class UserProfile(
 )
 
 interface AuthRepository {
+    /** False while the OAuth client isn't configured; the UI hides sign-in then. */
+    val isLoginAvailable: Boolean get() = true
     val currentUser: StateFlow<UserProfile?>
     val authResults: SharedFlow<Result<UserProfile>>
     suspend fun login(): Result<UserProfile>

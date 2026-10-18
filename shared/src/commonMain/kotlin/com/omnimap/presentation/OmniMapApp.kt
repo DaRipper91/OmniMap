@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.DynamicFeed
 import androidx.compose.material.icons.filled.Hub
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -18,7 +19,10 @@ import com.omnimap.presentation.dashboard.DashboardScreen
 import com.omnimap.presentation.dashboard.DashboardViewModel
 import com.omnimap.presentation.feed.FeedScreen
 import com.omnimap.presentation.graph.GraphScreen
+import com.omnimap.presentation.graph.GraphIntent
 import com.omnimap.presentation.graph.GraphViewModel
+import com.omnimap.presentation.graph.ui.CanvasState
+import com.omnimap.presentation.settings.SettingsScreen
 import com.omnimap.presentation.navigation.Screen
 import com.omnimap.presentation.theme.OmniMapTheme
 import com.omnimap.presentation.welcome.WelcomeScreen
@@ -31,8 +35,12 @@ private data class NavItem(val screen: Screen, val label: String, val icon: Imag
 private val navItems = listOf(
     NavItem(Screen.Dashboard, "Search", Icons.Filled.Dashboard, "Dashboard"),
     NavItem(Screen.Graph, "Graph", Icons.Filled.Hub, "Mind Map"),
-    NavItem(Screen.Feed, "AI Feed", Icons.Filled.DynamicFeed, "Feed")
+    NavItem(Screen.Feed, "AI Feed", Icons.Filled.DynamicFeed, "Feed"),
+    NavItem(Screen.Settings, "Settings", Icons.Filled.Settings, "Settings")
 )
+
+/** On wide windows the Architect chat already sits beside the graph, so AI Feed is phone-only. */
+private fun navItemsFor(isWide: Boolean) = if (isWide) navItems.filter { it.screen != Screen.Feed } else navItems
 
 @Composable
 fun OmniMapApp(
@@ -41,6 +49,8 @@ fun OmniMapApp(
     authRepository: com.omnimap.domain.repository.AuthRepository,
     /** Installed agent CLIs (`cli:claude`, …); desktop only. */
     agentClis: List<String> = emptyList(),
+    /** Seeds the Settings screen with the saved provider. */
+    settingsManager: com.omnimap.core.settings.SettingsManager? = null,
     onImportRequest: () -> Unit = {},
     onExportRequest: (String) -> Unit = {}
 ) {
@@ -49,8 +59,14 @@ fun OmniMapApp(
             mutableStateOf<Screen>(if (graphViewModel.isAiConfigured()) Screen.Dashboard else Screen.Welcome)
         }
 
+        // Hoisted so zoom and pan survive switching tabs.
+        val canvasState = remember { CanvasState() }
+        val graphState by graphViewModel.state.collectAsState()
+
         val content: @Composable (Boolean) -> Unit = { isWide ->
-            when (currentScreen) {
+            // AI Feed isn't offered on wide windows; show the graph (with its chat panel) instead.
+            val screen = if (isWide && currentScreen == Screen.Feed) Screen.Graph else currentScreen
+            when (screen) {
                 Screen.Welcome -> {
                     WelcomeScreen(
                         authRepository = authRepository,
@@ -64,8 +80,9 @@ fun OmniMapApp(
                 Screen.Dashboard -> {
                     DashboardScreen(
                         viewModel = dashboardViewModel,
+                        graphState = graphState,
                         onNodeClick = { nodeId ->
-                            // TODO: Focus specific node in graph
+                            graphViewModel.processIntent(GraphIntent.OnFocusNode(nodeId))
                             currentScreen = Screen.Graph
                         },
                         onImportRequest = onImportRequest,
@@ -73,10 +90,17 @@ fun OmniMapApp(
                     )
                 }
                 Screen.Graph -> {
-                    GraphScreen(viewModel = graphViewModel, isWide = isWide)
+                    GraphScreen(viewModel = graphViewModel, canvasState = canvasState, isWide = isWide)
                 }
                 Screen.Feed -> {
                     FeedScreen(viewModel = graphViewModel)
+                }
+                Screen.Settings -> {
+                    SettingsScreen(
+                        settingsManager = settingsManager,
+                        agentClis = agentClis,
+                        onSave = { choice -> graphViewModel.saveAiConfiguration(choice.apiKey, choice.model, choice.baseUrl) }
+                    )
                 }
             }
         }
@@ -91,12 +115,12 @@ fun OmniMapApp(
                         if (showNav) {
                             NavigationRail(
                                 modifier = Modifier.fillMaxHeight(),
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                contentColor = MaterialTheme.colorScheme.onSurface
                             ) {
-                                navItems.forEach { item ->
+                                navItemsFor(isWide = true).forEach { item ->
                                     NavigationRailItem(
-                                        selected = currentScreen == item.screen,
+                                        selected = currentScreen == item.screen || (currentScreen == Screen.Feed && item.screen == Screen.Graph),
                                         onClick = { currentScreen = item.screen },
                                         icon = { Icon(item.icon, contentDescription = item.description) },
                                         label = { Text(item.label) },
@@ -104,6 +128,7 @@ fun OmniMapApp(
                                     )
                                 }
                             }
+                            VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         }
                         content(true)
                     }
@@ -113,10 +138,10 @@ fun OmniMapApp(
                     bottomBar = {
                         if (showNav) {
                             NavigationBar(
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                                contentColor = MaterialTheme.colorScheme.onSurface
                             ) {
-                                navItems.forEach { item ->
+                                navItemsFor(isWide = false).forEach { item ->
                                     NavigationBarItem(
                                         selected = currentScreen == item.screen,
                                         onClick = { currentScreen = item.screen },

@@ -53,6 +53,7 @@ fun main() = application {
             dashboardViewModel = dashboardViewModel,
             authRepository = container.authRepository,
             agentClis = remember { CliAiRepository.installed() },
+            settingsManager = container.settingsManager,
             onImportRequest = {
                 val chooser = JFileChooser().apply {
                     fileFilter = FileNameExtensionFilter("JSON Files", "json")

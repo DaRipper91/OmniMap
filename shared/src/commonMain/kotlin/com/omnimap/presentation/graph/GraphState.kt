@@ -16,5 +16,9 @@ data class GraphState(
     val chatHistory: List<ChatMessage> = emptyList(),
     val editingNode: Node? = null,
     val isCreatingNode: Boolean = false,
-    val syncStatus: String? = null
+    val syncStatus: String? = null,
+    /** Node the canvas should centre on; cleared once it has. */
+    val focusNodeId: String? = null,
+    /** Bumped on every focus request so the same node can be focused twice. */
+    val focusRequest: Long = 0
 )
