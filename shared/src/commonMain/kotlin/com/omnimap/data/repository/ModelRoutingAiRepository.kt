@@ -1,6 +1,7 @@
 package com.omnimap.data.repository
 
 import com.omnimap.core.settings.SettingsManager
+import com.omnimap.data.remote.api.AgentCli
 import com.omnimap.domain.repository.AiInferenceRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +15,8 @@ import kotlinx.coroutines.flow.onEach
 class ModelRoutingAiRepository(
     private val geminiRepo: AiInferenceRepository,
     private val openAiRepo: AiInferenceRepository,
+    /** Desktop only: runs installed agent CLIs for `cli:*` models. */
+    private val cliRepo: AiInferenceRepository? = null,
     private val settingsManager: SettingsManager,
     initialModel: String = "gemini-3.1-pro"
 ) : AiInferenceRepository {
@@ -27,8 +30,11 @@ class ModelRoutingAiRepository(
             .launchIn(scope)
     }
 
-    private fun getActiveRepo(): AiInferenceRepository =
-        if (currentModel.startsWith("gemini")) geminiRepo else openAiRepo
+    private fun getActiveRepo(): AiInferenceRepository = when {
+        currentModel.startsWith("gemini") -> geminiRepo
+        cliRepo != null && AgentCli.isCli(currentModel) -> cliRepo
+        else -> openAiRepo
+    }
 
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> =
         getActiveRepo().generateNodeSuggestion(contextPrompt)

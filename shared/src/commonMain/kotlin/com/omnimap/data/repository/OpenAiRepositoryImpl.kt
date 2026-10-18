@@ -1,6 +1,7 @@
 package com.omnimap.data.repository
 
 import com.omnimap.core.settings.SettingsManager
+import com.omnimap.data.remote.api.requiresApiKey
 import com.omnimap.domain.repository.AiInferenceRepository
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +32,8 @@ class OpenAiRepositoryImpl(
         settingsManager.getBaseUrl().onEach { baseUrl = it }.launchIn(scope)
     }
 
-    override fun isConfigured(): Boolean = apiKey.isNotBlank() && !baseUrl.isNullOrBlank()
+    override fun isConfigured(): Boolean =
+        !baseUrl.isNullOrBlank() && (apiKey.isNotBlank() || !requiresApiKey(selectedModel, baseUrl))
 
     override fun getSelectedModel(): String = selectedModel
 

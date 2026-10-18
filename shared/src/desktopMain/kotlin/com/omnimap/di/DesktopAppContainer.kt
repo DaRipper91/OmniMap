@@ -6,6 +6,7 @@ import com.omnimap.core.haptics.DesktopHapticEngine
 import com.omnimap.core.haptics.HapticEngine
 import com.omnimap.core.settings.DesktopSettingsManager
 import com.omnimap.core.settings.SettingsManager
+import com.omnimap.data.repository.CliAiRepository
 import com.omnimap.data.repository.DesktopAuthRepository
 import com.omnimap.data.repository.FileOmniMapRepository
 import com.omnimap.data.repository.GeminiRepositoryImpl
@@ -57,6 +58,7 @@ class DesktopAppContainer {
                 baseUrl = desktopSettings.baseUrl.value,
                 settingsManager = desktopSettings
             ),
+            cliRepo = CliAiRepository(desktopSettings),
             settingsManager = desktopSettings,
             initialModel = savedModel
         )

@@ -23,7 +23,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
+import com.omnimap.data.remote.api.AgentCli
+import com.omnimap.data.remote.api.LocalOllama
 import com.omnimap.data.remote.api.OpenCodeZen
+import com.omnimap.data.remote.api.requiresApiKey
 import com.omnimap.domain.repository.AuthRepository
 import kotlinx.coroutines.launch
 
@@ -31,6 +34,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun WelcomeScreen(
     authRepository: AuthRepository,
+    agentClis: List<String> = emptyList(),
     onConfigurationFinished: (String, String, String?) -> Unit
 ) {
     var step by remember { mutableStateOf(0) }
@@ -44,6 +48,8 @@ fun WelcomeScreen(
     var isCustomModelSelected by remember { mutableStateOf(false) }
     var zenModels by remember { mutableStateOf<List<String>>(emptyList()) }
     var isLoadingZenModels by remember { mutableStateOf(false) }
+    var ollamaModels by remember { mutableStateOf<List<String>>(emptyList()) }
+    var ollamaStatus by remember { mutableStateOf<String?>(null) }
 
     val models = listOf(
         "gemini-3.1-pro",
@@ -52,7 +58,7 @@ fun WelcomeScreen(
         "gemini-2.0-pro-exp",
         "llama3.1",
         "qwen2.5"
-    ) + zenModels + "Custom..."
+    ) + agentClis + ollamaModels + zenModels + "Custom..."
 
     val steps = listOf(
         OnboardingStep(
@@ -170,6 +176,60 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (agentClis.isNotEmpty()) {
+                Text(
+                    text = "USE AN INSTALLED AGENT (NO KEY NEEDED)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                agentClis.forEach { cli ->
+                    OutlinedButton(
+                        onClick = {
+                            isCustomModelSelected = false
+                            selectedModel = cli
+                            baseUrl = ""
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(AgentCli.label(cli))
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            OutlinedButton(
+                onClick = {
+                    scope.launch {
+                        ollamaStatus = "Looking for Ollama…"
+                        val url = if (LocalOllama.isOllama(baseUrl)) baseUrl else LocalOllama.BASE_URL
+                        ollamaModels = LocalOllama.fetchModels(url)
+                        if (ollamaModels.isEmpty()) {
+                            ollamaStatus = "No Ollama models found at $url. Is `ollama serve` running?"
+                        } else {
+                            ollamaStatus = null
+                            isCustomModelSelected = false
+                            selectedModel = ollamaModels.first()
+                            baseUrl = url
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Use local Ollama models")
+            }
+
+            ollamaStatus?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedButton(
                 onClick = {
                     scope.launch {
@@ -203,12 +263,12 @@ fun WelcomeScreen(
                     onClick = { expanded = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Model: ${if (isCustomModelSelected) "Custom" else selectedModel}")
+                    Text("Model: ${if (isCustomModelSelected) "Custom" else if (AgentCli.isCli(selectedModel)) AgentCli.label(selectedModel) else selectedModel}")
                 }
                 DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                     models.forEach { model ->
                         DropdownMenuItem(
-                            text = { Text(model) },
+                            text = { Text(if (AgentCli.isCli(model)) AgentCli.label(model) else model) },
                             onClick = {
                                 if (model == "Custom...") {
                                     isCustomModelSelected = true
@@ -219,8 +279,10 @@ fun WelcomeScreen(
                                 expanded = false
                                 
                                 val modelToUse = if (isCustomModelSelected) customModelName else model
-                                if (modelToUse.startsWith("gemini")) {
+                                if (modelToUse.startsWith("gemini") || AgentCli.isCli(modelToUse)) {
                                     baseUrl = ""
+                                } else if (model in ollamaModels) {
+                                    if (!LocalOllama.isOllama(baseUrl)) baseUrl = LocalOllama.BASE_URL
                                 } else if (model in zenModels) {
                                     baseUrl = OpenCodeZen.BASE_URL
                                 } else if (baseUrl.isBlank() || baseUrl.contains("google") || OpenCodeZen.isZenUrl(baseUrl)) {
@@ -250,7 +312,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             val currentEffectiveModel = if (isCustomModelSelected) customModelName else selectedModel
-            if (!currentEffectiveModel.startsWith("gemini")) {
+            if (!currentEffectiveModel.startsWith("gemini") && !AgentCli.isCli(currentEffectiveModel)) {
                 OutlinedTextField(
                     value = baseUrl,
                     onValueChange = { baseUrl = it },
@@ -265,7 +327,7 @@ fun WelcomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            OutlinedTextField(
+            if (requiresApiKey(currentEffectiveModel, baseUrl)) OutlinedTextField(
                 value = apiKey,
                 onValueChange = { apiKey = it },
                 label = { Text("API Key") },
@@ -302,7 +364,7 @@ fun WelcomeScreen(
             onClick = {
                 if (currentStep.isLast) {
                     val finalModel = if (isCustomModelSelected) customModelName else selectedModel
-                    if (apiKey.isNotBlank() && finalModel.isNotBlank()) {
+                    if (finalModel.isNotBlank() && (apiKey.isNotBlank() || !requiresApiKey(finalModel, baseUrl))) {
                         onConfigurationFinished(apiKey, finalModel, baseUrl.takeIf { it.isNotBlank() })
                     }
                 } else {
@@ -315,7 +377,10 @@ fun WelcomeScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary
             ),
-            enabled = !currentStep.isLast || (apiKey.isNotBlank() && (!isCustomModelSelected || customModelName.isNotBlank()))
+            enabled = !currentStep.isLast || (
+                (!isCustomModelSelected || customModelName.isNotBlank()) &&
+                    (apiKey.isNotBlank() || !requiresApiKey(if (isCustomModelSelected) customModelName else selectedModel, baseUrl))
+                )
         ) {
             Text(
                 if (currentStep.isLast) "Initialize Mind-Map" else "Next",

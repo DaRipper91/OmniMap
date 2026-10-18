@@ -39,6 +39,8 @@ fun OmniMapApp(
     graphViewModel: GraphViewModel,
     dashboardViewModel: DashboardViewModel,
     authRepository: com.omnimap.domain.repository.AuthRepository,
+    /** Installed agent CLIs (`cli:claude`, …); desktop only. */
+    agentClis: List<String> = emptyList(),
     onImportRequest: () -> Unit = {},
     onExportRequest: (String) -> Unit = {}
 ) {
@@ -52,6 +54,7 @@ fun OmniMapApp(
                 Screen.Welcome -> {
                     WelcomeScreen(
                         authRepository = authRepository,
+                        agentClis = agentClis,
                         onConfigurationFinished = { key, model, url ->
                             graphViewModel.saveAiConfiguration(key, model, url)
                             currentScreen = Screen.Dashboard

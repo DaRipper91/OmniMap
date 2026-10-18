@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.omnimap.data.repository.CliAiRepository
 import com.omnimap.di.DesktopAppContainer
 import com.omnimap.presentation.OmniMapApp
 import com.omnimap.presentation.dashboard.DashboardViewModel
@@ -51,6 +52,7 @@ fun main() = application {
             graphViewModel = graphViewModel,
             dashboardViewModel = dashboardViewModel,
             authRepository = container.authRepository,
+            agentClis = remember { CliAiRepository.installed() },
             onImportRequest = {
                 val chooser = JFileChooser().apply {
                     fileFilter = FileNameExtensionFilter("JSON Files", "json")
