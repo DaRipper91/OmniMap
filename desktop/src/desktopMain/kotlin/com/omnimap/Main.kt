@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.omnimap.core.util.DesktopPaths
 import com.omnimap.data.repository.CliAiRepository
 import com.omnimap.di.DesktopAppContainer
 import com.omnimap.presentation.OmniMapApp
@@ -17,9 +18,19 @@ import com.omnimap.presentation.graph.GraphViewModel
 import java.io.File
 import javax.imageio.ImageIO
 import javax.swing.JFileChooser
+import javax.swing.JOptionPane
 import javax.swing.filechooser.FileNameExtensionFilter
 
-fun main() = application {
+fun main() {
+    // One instance at a time: a second one would load a stale graph and overwrite saves.
+    if (!DesktopPaths.acquireInstanceLock()) {
+        JOptionPane.showMessageDialog(null, "OmniMap is already running.", "OmniMap", JOptionPane.INFORMATION_MESSAGE)
+        return
+    }
+    runApp()
+}
+
+private fun runApp() = application {
     val container = remember { DesktopAppContainer() }
     val graphViewModel = remember { 
         GraphViewModel(

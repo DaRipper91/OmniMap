@@ -85,9 +85,11 @@ class FileOmniMapRepository(
     }
 
     private fun writeToDisk() {
-        val snapshot = Snapshot(nodes.value.values.toList(), edges.value, queuedRequests.value)
         try {
             synchronized(file) {
+                // Read the state inside the lock, so a slower save can never write an
+                // older snapshot over a newer one.
+                val snapshot = Snapshot(nodes.value.values.toList(), edges.value, queuedRequests.value)
                 file.parentFile?.mkdirs()
                 val tmp = File(file.parentFile, "${file.name}.tmp")
                 tmp.writeText(gson.toJson(snapshot))

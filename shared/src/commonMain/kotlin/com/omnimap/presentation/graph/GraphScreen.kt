@@ -99,6 +99,8 @@ private fun WideGraphScreen(viewModel: GraphViewModel, canvasState: CanvasState)
                         state = state,
                         onPromptSubmitted = { prompt -> viewModel.processIntent(GraphIntent.OnSubmitPrompt(prompt)) },
                         onRetryClicked = { viewModel.processIntent(GraphIntent.RetryQueuedRequests) },
+                        promptText = viewModel.promptDraft,
+                        onPromptTextChange = { viewModel.promptDraft = it },
                         modifier = Modifier.weight(1f)
                     )
                 }

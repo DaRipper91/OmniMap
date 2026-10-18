@@ -27,13 +27,15 @@ fun ChatContent(
     state: GraphState,
     onPromptSubmitted: (String) -> Unit,
     onRetryClicked: () -> Unit,
+    /** The unsent message; owned by the caller so it outlives this composable. */
+    promptText: String,
+    onPromptTextChange: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var promptText by remember { mutableStateOf("") }
     val submit = {
         if (promptText.isNotBlank()) {
             onPromptSubmitted(promptText)
-            promptText = ""
+            onPromptTextChange("")
         }
     }
     
@@ -146,7 +148,7 @@ fun ChatContent(
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextField(
                 value = promptText,
-                onValueChange = { promptText = it },
+                onValueChange = onPromptTextChange,
                 // Hardware keyboards: Enter sends, Shift+Enter starts a new line.
                 modifier = Modifier
                     .weight(1f)

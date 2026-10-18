@@ -23,7 +23,14 @@ mkdir -p "$app"
 cp -r "$here/bin" "$here/lib" "$app/"
 ln -sf "$app/bin/OmniMap" "$bin/omnimap"
 cp "$here/omnimap.png" "$data/icons/hicolor/512x512/apps/omnimap.png"
-sed "s|^Exec=.*|Exec=$app/bin/OmniMap|" "$here/omnimap.desktop" > "$data/applications/omnimap.desktop"
+# Desktop Entry Exec: quote the path (it may contain spaces) and escape \ " ` $ inside it.
+exec_path=$(printf '%s' "$app/bin/OmniMap" | sed 's/[\\"`$]/\\&/g')
+while IFS= read -r line; do
+    case "$line" in
+        Exec=*) printf 'Exec="%s"\n' "$exec_path" ;;
+        *) printf '%s\n' "$line" ;;
+    esac
+done < "$here/omnimap.desktop" > "$data/applications/omnimap.desktop"
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$data/applications" || true
 
 echo "OmniMap installed. Launch it from your app menu or run: omnimap"

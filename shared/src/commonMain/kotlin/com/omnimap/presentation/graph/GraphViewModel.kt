@@ -1,5 +1,7 @@
 package com.omnimap.presentation.graph
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
@@ -46,6 +48,9 @@ class GraphViewModel(
             }
         }
     }
+
+    /** The unsent chat message, kept here so hiding the panel or switching layouts doesn't lose it. */
+    var promptDraft by androidx.compose.runtime.mutableStateOf("")
 
     private val _state = MutableStateFlow(GraphState(isLoading = true))
     val state: StateFlow<GraphState> = _state.asStateFlow()

@@ -1,6 +1,9 @@
 package com.omnimap.presentation
 
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,9 +112,16 @@ fun OmniMapApp(
             val isWide = maxWidth >= WideLayoutMinWidth
             val showNav = currentScreen != Screen.Welcome
 
-            if (isWide) {
+            if (!showNav) {
+                // Setup is composed in the same place at any width, so resizing across the
+                // breakpoint doesn't reset the wizard or clear what was typed.
+                Surface(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                    content(isWide)
+                }
+            } else if (isWide) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    Row(modifier = Modifier.fillMaxSize()) {
+                    // Android draws edge to edge; keep the rail and panel clear of system bars.
+                    Row(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
                         if (showNav) {
                             NavigationRail(
                                 modifier = Modifier.fillMaxHeight(),

@@ -21,6 +21,29 @@ object DesktopPaths {
         else -> File(System.getenv("XDG_DATA_HOME")?.takeIf { it.isNotBlank() } ?: "$home/.local/share", "omnimap")
     }
 
+    private var instanceLock: java.nio.channels.FileLock? = null
+
+    /**
+     * Takes an OS-level lock held for the life of the process, so two OmniMap
+     * windows can't each load the graph and overwrite the other's saves.
+     * Returns false if another instance already holds it.
+     */
+    fun acquireInstanceLock(): Boolean {
+        val dir = dataDir().apply { mkdirs() }
+        val channel = java.io.RandomAccessFile(File(dir, "omnimap.lock"), "rw").channel
+        val lock = try {
+            channel.tryLock()
+        } catch (_: java.nio.channels.OverlappingFileLockException) {
+            null
+        }
+        if (lock == null) {
+            channel.close()
+            return false
+        }
+        instanceLock = lock
+        return true
+    }
+
     /** chmod 600 where the filesystem supports POSIX permissions; a no-op on Windows. */
     fun restrictToOwner(file: File) {
         try {
