@@ -1,0 +1,44 @@
+{
+  "name": "OmniMap Neural Canvas",
+  "version": "2.0.0",
+  "project": "OmniMap",
+  "tokens": {
+    "dark": {
+      "canvas_bg": "#0F0D13",
+      "panel_bg": "#1D1B20",
+      "panel_border": "#2B2930",
+      "grid_dot": "#36343B",
+      "text_primary": "#F4F0F5",
+      "text_secondary": "#938F99",
+      "text_muted": "#625B71",
+      "edge_line": "#49454F",
+      "project_purple": "#D0BCFF",
+      "task_mint": "#7FD8C4",
+      "idea_amber": "#F6C86A",
+      "goal_sky": "#9ECAFF",
+      "agent_rose": "#EFB8C8"
+    },
+    "light": {
+      "canvas_bg": "#FBF8FD",
+      "panel_bg": "#FFFFFF",
+      "panel_border": "#E4DCEC",
+      "grid_dot": "#DDD6E6",
+      "text_primary": "#1D1B20",
+      "text_secondary": "#625B71",
+      "text_muted": "#938F99",
+      "edge_line": "#B9B1C4",
+      "project_purple": "#6650A4",
+      "task_mint": "#00695C",
+      "idea_amber": "#8A5A00",
+      "goal_sky": "#0B5FAE",
+      "agent_rose": "#7D5260"
+    }
+  },
+  "node_kinds": {
+    "GOAL": "goal_sky",
+    "PROJECT": "project_purple",
+    "TASK": "task_mint",
+    "IDEA": "idea_amber",
+    "AGENT": "agent_rose"
+  }
+}

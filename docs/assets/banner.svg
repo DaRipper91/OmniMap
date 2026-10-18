@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-labelledby="t d">
+  <title id="t">OmniMap</title>
+  <desc id="d">A graph of typed nodes on a dot grid. The Architect proposes a dashed draft idea, which is then committed and turns solid.</desc>
+  <defs>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="12" cy="12" r="1.3" class="dot"/>
+    </pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="edge-head"/>
+    </marker>
+    <marker id="arrow-draft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="draft-head"/>
+    </marker>
+  </defs>
+  <style>
+    .bg{fill:#0F0D13}.dot{fill:#36343B}.card{fill:#1D1B20;stroke:#2B2930;stroke-width:1.5}
+    .edge{stroke:#49454F;stroke-width:2.5;fill:none}.edge-head{fill:#49454F}
+    .draft-head{fill:#EFB8C8}.kind{font:600 11px ui-monospace,'JetBrains Mono',monospace;letter-spacing:.12em}
+    .title{font:700 17px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5}
+    .sub{font:400 13px system-ui,'Segoe UI',sans-serif;fill:#938F99}
+    .word{font:800 76px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5;letter-spacing:-.03em}
+    .tag{font:500 20px system-ui,'Segoe UI',sans-serif;fill:#CCC2DC}
+    .project{fill:#D0BCFF}.task{fill:#7FD8C4}.idea{fill:#F6C86A}.goal{stroke:#9ECAFF;fill:none;stroke-width:3}.agent{fill:#EFB8C8}
+    .k-project{fill:#D0BCFF}.k-task{fill:#7FD8C4}.k-idea{fill:#F6C86A}.k-goal{fill:#9ECAFF}.k-agent{fill:#EFB8C8}
+    .draft-box{fill:#1D1B20;stroke:#EFB8C8;stroke-width:2;stroke-dasharray:7 6}
+    .solid-box{fill:#1D1B20;stroke:#D0BCFF;stroke-width:2}
+    .draft-tag{font:700 10px ui-monospace,monospace;letter-spacing:.14em;fill:#EFB8C8}
+    .draft-edge{stroke:#EFB8C8;stroke-width:2.5;fill:none;stroke-dasharray:8 6}
+    /* 9s loop: proposal appears (0-25%), waits, gets committed (55-65%), holds, fades out */
+    @keyframes propose{0%,8%{opacity:0;transform:translateY(8px)}22%,92%{opacity:1;transform:none}100%{opacity:0}}
+    @keyframes commit{0%,55%{opacity:0}63%,92%{opacity:1}100%{opacity:0}}
+    @keyframes undraft{0%,55%{opacity:1}63%,100%{opacity:0}}
+    @keyframes edgeIn{0%,10%{stroke-dashoffset:140}24%,100%{stroke-dashoffset:0}}
+    .proposal{animation:propose 9s ease-out infinite}
+    .committed{animation:commit 9s ease-out infinite}
+    .drafty{animation:undraft 9s ease-out infinite}
+    .grow{stroke-dasharray:140;animation:edgeIn 9s ease-out infinite}
+    @media (prefers-reduced-motion:reduce){.proposal,.committed,.drafty,.grow{animation:none}.committed{opacity:0}}
+    @media (prefers-color-scheme:light){
+      .bg{fill:#FBF8FD}.dot{fill:#DDD6E6}.card,.draft-box,.solid-box{fill:#FFFFFF}.card{stroke:#E4DCEC}
+      .title,.word{fill:#1D1B20}.sub{fill:#625B71}.tag{fill:#4A4458}.edge{stroke:#B9B1C4}.edge-head{fill:#B9B1C4}
+      .project,.k-project{fill:#6650A4}.task,.k-task{fill:#00695C}.idea,.k-idea{fill:#8A5A00}.k-goal{fill:#0B5FAE}.goal{stroke:#0B5FAE}.agent,.k-agent{fill:#7D5260}
+      .draft-box,.draft-edge{stroke:#7D5260}.draft-tag,.draft-head{fill:#7D5260}.solid-box{stroke:#6650A4}
+    }
+  </style>
+
+  <rect class="bg" width="1200" height="360" rx="20"/>
+  <rect width="1200" height="360" rx="20" fill="url(#dots)"/>
+
+  <!-- edges first, under the cards -->
+  <path class="edge" d="M708,92 L640,150" marker-end="url(#arrow)"/>
+  <path class="edge" d="M862,92 L930,150" marker-end="url(#arrow)"/>
+  <path class="edge" d="M620,214 L600,262" marker-end="url(#arrow)"/>
+  <path class="edge" d="M1084,74 L1010,150" stroke-dasharray="2 6" marker-end="url(#arrow)"/>
+  <path class="draft-edge grow" d="M960,214 L992,262" marker-end="url(#arrow-draft)"/>
+
+  <!-- Goal -->
+  <g transform="translate(700,36)">
+    <rect class="card" width="170" height="58" rx="14"/>
+    <circle class="goal" cx="18" cy="19" r="5"/><text class="kind k-goal" x="30" y="23">GOAL</text>
+    <text class="title" x="14" y="45">Ship 1.0</text>
+  </g>
+  <!-- Project -->
+  <g transform="translate(540,152)">
+    <rect class="card" width="196" height="62" rx="14"/>
+    <rect class="project" x="13" y="14" width="10" height="10" rx="3"/><text class="kind k-project" x="30" y="23">PROJECT</text>
+    <text class="title" x="14" y="47">Desktop app</text>
+  </g>
+  <!-- Project 2 -->
+  <g transform="translate(880,152)">
+    <rect class="card" width="176" height="62" rx="14"/>
+    <rect class="project" x="13" y="14" width="10" height="10" rx="3"/><text class="kind k-project" x="30" y="23">PROJECT</text>
+    <text class="title" x="14" y="47">AI providers</text>
+  </g>
+  <!-- Task -->
+  <g transform="translate(520,264)">
+    <rect class="card" width="196" height="62" rx="14"/>
+    <rect class="task" x="13" y="14" width="10" height="10"/><text class="kind k-task" x="30" y="23">TASK</text>
+    <text class="title" x="14" y="47">Fix edge anchors</text>
+  </g>
+  <!-- Agent -->
+  <g transform="translate(1046,30)">
+    <rect class="card" width="130" height="46" rx="12"/>
+    <path class="agent" d="M15,13 h8 l4,6 l-4,6 h-8 l-4,-6 z"/><text class="kind k-agent" x="32" y="23">AGENT</text>
+    <text class="sub" x="13" y="39">Architect</text>
+  </g>
+
+  <!-- The Architect's proposal: dashed draft, then committed -->
+  <g class="proposal" transform="translate(930,264)">
+    <rect class="draft-box drafty" width="214" height="62" rx="14"/>
+    <rect class="solid-box committed" width="214" height="62" rx="14"/>
+    <path class="idea" d="M18,13 l6,6 l-6,6 l-6,-6 z"/><text class="kind k-idea" x="30" y="23">IDEA</text>
+    <text class="draft-tag drafty" x="148" y="23">AI DRAFT</text>
+    <text class="title" x="14" y="47">Onboarding tour</text>
+  </g>
+
+  <!-- wordmark, set like a map legend in the empty quadrant -->
+  <text class="word" x="56" y="190">OmniMap</text>
+  <text class="tag" x="60" y="230">Your projects as a living graph.</text>
+  <text class="tag" x="60" y="258">An AI Architect proposes; you commit.</text>
+  <g transform="translate(60,292)" class="kind">
+    <rect class="project" width="10" height="10" rx="3" y="-9"/><text class="k-project" x="16">PROJECT</text>
+    <rect class="task" x="104" width="10" height="10" y="-9"/><text class="k-task" x="120">TASK</text>
+    <path class="idea" d="M188,-9 l5,5 l-5,5 l-5,-5 z" transform="translate(5,0)"/><text class="k-idea" x="204">IDEA</text>
+    <circle class="goal" cx="268" cy="-4" r="4.5"/><text class="k-goal" x="280">GOAL</text>
+    <path class="agent" d="M342,-9 h6 l3,5 l-3,5 h-6 l-3,-5 z"/><text class="k-agent" x="358">AGENT</text>
+  </g>
+</svg>

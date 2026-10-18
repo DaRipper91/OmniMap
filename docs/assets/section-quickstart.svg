@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 96" width="1200" height="96" role="img" aria-label="Quickstart and Platforms">
+  <!-- Console query style section header -->
+  <style>
+    .q{font:500 14px ui-monospace,monospace;fill:#938F99}.qa{fill:#D0BCFF}
+    .h{font:800 36px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5;letter-spacing:-.02em}
+    .num{font:800 36px system-ui,sans-serif;fill:#36343B}.bar{fill:#EFB8C8}
+    .sub{font:400 16px system-ui,sans-serif;fill:#938F99}
+    @media (prefers-color-scheme:light){.q{fill:#625B71}.qa{fill:#6650A4}.h{fill:#1D1B20}.num{fill:#E4DCEC}.bar{fill:#7D5260}.sub{fill:#625B71}}
+  </style>
+  <text class="q" x="2" y="20"><tspan class="qa">›</tspan> omnimap --install --all-platforms</text>
+  <text class="num" x="0" y="74">05</text>
+  <rect class="bar" x="52" y="44" width="4" height="34" rx="2"/>
+  <text class="h" x="68" y="74">Quickstart &amp; Packages</text>
+  <text class="sub" x="520" y="72">Native binaries for Android, Linux (RPM, Arch, Deb), macOS, and Windows.</text>
+</svg>

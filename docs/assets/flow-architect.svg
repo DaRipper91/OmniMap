@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="OmniMap AI Mutation Lifecycle">
+  <title>OmniMap AI Mutation Lifecycle</title>
+  <desc>Four-stage pipeline from human natural language prompt to local Room/File persistence</desc>
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0,1 L10,5 L0,9 z" fill="#D0BCFF"/>
+    </marker>
+  </defs>
+  <style>
+    .bg{fill:#141218;stroke:#2B2930;stroke-width:1.5}.card{fill:#1D1B20;stroke:#2B2930;stroke-width:1.5}
+    .step{font:700 11px ui-monospace,monospace;letter-spacing:.16em;fill:#EFB8C8}
+    .title{font:700 17px system-ui,'Segoe UI',sans-serif;fill:#F4F0F5}
+    .desc{font:400 13px system-ui,sans-serif;fill:#938F99}
+    .code{font:500 12px ui-monospace,monospace;fill:#D0BCFF}
+    .flow-line{stroke:#D0BCFF;stroke-width:2;stroke-dasharray:6 4;fill:none}
+    .draft-box{fill:#1D1B20;stroke:#EFB8C8;stroke-width:2;stroke-dasharray:6 4}
+    .solid-box{fill:#1D1B20;stroke:#D0BCFF;stroke-width:2}
+    .btn-commit{fill:#D0BCFF;rx:6}.btn-txt{font:700 11px system-ui,sans-serif;fill:#381E72}
+    @media (prefers-color-scheme:light){
+      .bg{fill:#FBF8FD;stroke:#E4DCEC}.card{fill:#FFFFFF;stroke:#E4DCEC}
+      .step{fill:#7D5260}.title{fill:#1D1B20}.desc{fill:#625B71}.code{fill:#6650A4}
+      .flow-line{stroke:#6650A4}.draft-box{fill:#FFFFFF;stroke:#7D5260}.solid-box{fill:#FFFFFF;stroke:#6650A4}
+      .btn-commit{fill:#6650A4}.btn-txt{fill:#FFFFFF}
+    }
+  </style>
+
+  <rect class="bg" width="1200" height="320" rx="16"/>
+
+  <!-- Connecting Flow Lines -->
+  <path class="flow-line" d="M260,160 L310,160" marker-end="url(#arr)"/>
+  <path class="flow-line" d="M560,160 L610,160" marker-end="url(#arr)"/>
+  <path class="flow-line" d="M860,160 L910,160" marker-end="url(#arr)"/>
+
+  <!-- Step 1: Human Prompt -->
+  <g transform="translate(30, 50)">
+    <rect class="card" width="230" height="220" rx="14"/>
+    <text class="step" x="20" y="32">01 · INTENT</text>
+    <text class="title" x="20" y="60">Human Dialogue</text>
+    <text class="desc" x="20" y="86">Natural language input into</text>
+    <text class="desc" x="20" y="104">the Architect console or</text>
+    <text class="desc" x="20" y="122">bottom-sheet drawer.</text>
+    <rect x="20" y="146" width="190" height="50" rx="8" fill="#2B2930"/>
+    <text class="code" x="30" y="176">"Break Ship 1.0 into</text>
+    <text class="code" x="30" y="190">desktop &amp; mobile tasks"</text>
+  </g>
+
+  <!-- Step 2: Structured Inference -->
+  <g transform="translate(330, 50)">
+    <rect class="card" width="230" height="220" rx="14"/>
+    <text class="step" x="20" y="32">02 · INFERENCE</text>
+    <text class="title" x="20" y="60">Architect Routing</text>
+    <text class="desc" x="20" y="86">Gemini 3.1 Pro SDK,</text>
+    <text class="desc" x="20" y="104">Ollama endpoint, or CLI</text>
+    <text class="desc" x="20" y="122">returning graph JSON.</text>
+    <rect x="20" y="146" width="190" height="50" rx="8" fill="#2B2930"/>
+    <text class="code" x="30" y="168">{</text>
+    <text class="code" x="42" y="184">"nodes": [...],</text>
+    <text class="code" x="42" y="198">"edges": [...]</text>
+    <text class="code" x="30" y="210">}</text>
+  </g>
+
+  <!-- Step 3: Drafting Mode (Ghost Nodes) -->
+  <g transform="translate(630, 50)">
+    <rect class="card" width="230" height="220" rx="14"/>
+    <text class="step" x="20" y="32">03 · PROPOSAL</text>
+    <text class="title" x="20" y="60">Ghost Draft Nodes</text>
+    <text class="desc" x="20" y="86">Nodes appear with dashed</text>
+    <text class="desc" x="20" y="104">borders on the dot grid.</text>
+    <text class="desc" x="20" y="122">Zero auto-overwrites.</text>
+    <g transform="translate(20, 146)">
+      <rect class="draft-box" width="190" height="42" rx="8"/>
+      <text class="step" x="12" y="26">AI DRAFT · TASK</text>
+    </g>
+    <rect class="btn-commit" x="20" y="198" width="80" height="24" rx="6"/>
+    <text class="btn-txt" x="30" y="214">✓ Commit</text>
+    <text class="desc" x="114" y="214">✕ Discard</text>
+  </g>
+
+  <!-- Step 4: Local Commitment -->
+  <g transform="translate(930, 50)">
+    <rect class="card" width="240" height="220" rx="14"/>
+    <text class="step" x="20" y="32">04 · PERSISTENCE</text>
+    <text class="title" x="20" y="60">Local-First Commit</text>
+    <text class="desc" x="20" y="86">Committed nodes solidify.</text>
+    <text class="desc" x="20" y="104">Reactive state flushes to</text>
+    <text class="desc" x="20" y="122">local SQLite / Room / JSON.</text>
+    <g transform="translate(20, 146)">
+      <rect class="solid-box" width="200" height="50" rx="8"/>
+      <text class="title" x="14" y="28" font-size="14">Package for Asahi</text>
+      <text class="desc" x="14" y="44" font-size="11">Persisted: Room / graph.json</text>
+    </g>
+  </g>
+</svg>
