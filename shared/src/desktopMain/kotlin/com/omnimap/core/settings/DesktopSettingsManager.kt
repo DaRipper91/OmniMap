@@ -65,8 +65,11 @@ class DesktopSettingsManager(
             if (value == null) props.remove(key) else props.setProperty(key, value)
             file.parentFile?.mkdirs()
             val tmp = File(file.parentFile, "${file.name}.tmp")
-            tmp.outputStream().use { props.store(it, "OmniMap settings") }
+            // Lock the file down before the API key goes in, so it is never world-readable.
+            tmp.delete()
+            tmp.createNewFile()
             DesktopPaths.restrictToOwner(tmp)
+            tmp.outputStream().use { props.store(it, "OmniMap settings") }
             DesktopPaths.atomicReplace(tmp, file)
         }
     }

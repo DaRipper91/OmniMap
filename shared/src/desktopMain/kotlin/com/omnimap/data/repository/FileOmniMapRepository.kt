@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -98,14 +99,13 @@ class FileOmniMapRepository(
     }
 
     private inline fun mutateNodes(block: (MutableMap<String, Node>) -> Unit) {
-        val current = nodes.value.toMutableMap()
-        block(current)
-        nodes.value = current
+        // update() retries on contention, so concurrent writers on Dispatchers.IO don't drop each other's changes.
+        nodes.update { it.toMutableMap().apply(block) }
         scheduleSave()
     }
 
     private inline fun mutateEdges(block: (List<Edge>) -> List<Edge>) {
-        edges.value = block(edges.value)
+        edges.update(block)
         scheduleSave()
     }
 
@@ -141,12 +141,12 @@ class FileOmniMapRepository(
     override fun getQueuedAiRequests(): Flow<List<QueuedAiRequest>> = queuedRequests
 
     override suspend fun insertQueuedAiRequest(request: QueuedAiRequest) {
-        queuedRequests.value = queuedRequests.value.filter { it.id != request.id } + request
+        queuedRequests.update { list -> list.filter { it.id != request.id } + request }
         scheduleSave()
     }
 
     override suspend fun deleteQueuedAiRequest(id: String) {
-        queuedRequests.value = queuedRequests.value.filter { it.id != id }
+        queuedRequests.update { list -> list.filter { it.id != id } }
         scheduleSave()
     }
 
