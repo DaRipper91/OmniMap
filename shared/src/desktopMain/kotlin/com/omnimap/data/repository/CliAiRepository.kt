@@ -15,16 +15,19 @@ import java.util.concurrent.TimeUnit
  */
 class CliAiRepository(private val settings: DesktopSettingsManager) : AiInferenceRepository {
 
-    private fun args(command: String, prompt: String): List<String> = when (command) {
-        "claude" -> listOf("-p", prompt, "--tools", "")
+    private fun args(command: String, prompt: String, subModel: String? = null): List<String> = when (command) {
+        "claude" -> listOf("-p", prompt, "--tools", "") + if (!subModel.isNullOrBlank() && subModel != "default") listOf("--model", subModel) else emptyList()
         "codex" -> listOf("exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only", prompt)
-        "copilot" -> listOf("-p", prompt, "-s")
+        "copilot" -> listOf("-p", prompt, "-s", "--allow-all-tools") + if (!subModel.isNullOrBlank() && subModel != "default") listOf("--model", subModel) else emptyList()
         "agy" -> listOf("-p", prompt, "--mode", "plan")
+        "opencode" -> listOf("run") + (if (!subModel.isNullOrBlank() && subModel != "default") listOf("-m", subModel) else emptyList()) + listOf(prompt)
         else -> error("Unknown CLI: $command")
     }
 
     override suspend fun generateNodeSuggestion(contextPrompt: String): Result<String> = withContext(Dispatchers.IO) {
-        val command = AgentCli.command(settings.selectedModel.value)
+        val selected = settings.selectedModel.value
+        val command = AgentCli.command(selected)
+        val subModel = AgentCli.subModel(selected)
         val exe = find(command) ?: return@withContext Result.failure(Exception("$command is not installed"))
         val prompt = "You are a graph architect. Output ONLY valid JSON.\n\n$contextPrompt"
         // ponytail: prompt goes in argv (128 KB per-arg limit on Linux); switch to stdin if graphs get that big.
@@ -32,7 +35,7 @@ class CliAiRepository(private val settings: DesktopSettingsManager) : AiInferenc
         try {
             val out = File(dir, ".out")
             val err = File(dir, ".err")
-            val process = ProcessBuilder(listOf(exe.path) + args(command, prompt))
+            val process = ProcessBuilder(listOf(exe.path) + args(command, prompt, subModel))
                 .directory(dir)
                 .redirectOutput(out)
                 .redirectError(err)
@@ -75,7 +78,14 @@ class CliAiRepository(private val settings: DesktopSettingsManager) : AiInferenc
         // ponytail: Linux/macOS layout only; Windows .cmd shims aren't searched.
         private val searchPath: List<String> =
             System.getenv("PATH").orEmpty().split(File.pathSeparator).filter { it.isNotBlank() } +
-                listOf("$home/.local/bin", "$home/.npm-global/bin", "$home/.bun/bin", "/usr/local/bin", "/usr/bin")
+                listOf(
+                    "$home/.local/bin",
+                    "$home/.npm-global/bin",
+                    "$home/.bun/bin",
+                    "$home/.local/share/pnpm/bin",
+                    "/usr/local/bin",
+                    "/usr/bin"
+                )
 
         private fun find(command: String): File? =
             searchPath.map { File(it, command) }.firstOrNull { it.isFile && it.canExecute() }

@@ -6,6 +6,7 @@ import com.omnimap.core.haptics.DesktopHapticEngine
 import com.omnimap.core.haptics.HapticEngine
 import com.omnimap.core.settings.DesktopSettingsManager
 import com.omnimap.core.settings.SettingsManager
+import com.omnimap.data.repository.AnthropicRepositoryImpl
 import com.omnimap.data.repository.CliAiRepository
 import com.omnimap.data.repository.DesktopAuthRepository
 import com.omnimap.data.repository.FileOmniMapRepository
@@ -49,13 +50,18 @@ class DesktopAppContainer {
         ModelRoutingAiRepository(
             geminiRepo = GeminiRepositoryImpl(
                 apiKey = savedKey,
-                selectedModel = savedModel.takeIf { it.startsWith("gemini") } ?: "gemini-3.1-pro",
+                selectedModel = savedModel.takeIf { it.startsWith("gemini") } ?: "gemini-2.0-flash",
                 settingsManager = desktopSettings
             ),
             openAiRepo = OpenAiRepositoryImpl(
                 apiKey = savedKey,
                 selectedModel = savedModel,
                 baseUrl = desktopSettings.baseUrl.value,
+                settingsManager = desktopSettings
+            ),
+            anthropicRepo = AnthropicRepositoryImpl(
+                apiKey = savedKey,
+                selectedModel = savedModel.takeIf { it.startsWith("claude") } ?: "claude-3-5-sonnet-20241022",
                 settingsManager = desktopSettings
             ),
             cliRepo = CliAiRepository(desktopSettings),

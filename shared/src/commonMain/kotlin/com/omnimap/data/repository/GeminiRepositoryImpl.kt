@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.onEach
 
 class GeminiRepositoryImpl(
     private var apiKey: String,
-    private var selectedModel: String = "gemini-1.5-pro",
+    private var selectedModel: String = "gemini-2.0-flash",
     private val settingsManager: SettingsManager
 ) : AiInferenceRepository {
 

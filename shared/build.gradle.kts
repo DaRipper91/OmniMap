@@ -47,6 +47,12 @@ kotlin {
                 implementation("androidx.lifecycle:lifecycle-viewmodel:2.8.0")
             }
         }
+        val commonTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.1")
+            }
+        }
         val androidMain by getting {
             dependencies {
                 api("androidx.activity:activity-compose:1.8.2")
@@ -62,6 +68,7 @@ kotlin {
         val desktopMain by getting {
             dependencies {
                 implementation(compose.desktop.currentOs)
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
             }
         }
     }

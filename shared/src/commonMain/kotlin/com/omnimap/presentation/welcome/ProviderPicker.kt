@@ -17,14 +17,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.omnimap.data.remote.api.AgentCli
+import com.omnimap.data.remote.api.CloudModelCatalogs
 import com.omnimap.data.remote.api.LocalOllama
-import com.omnimap.data.remote.api.OpenCodeZen
 import kotlinx.coroutines.launch
 
 enum class ProviderKind { AgentCli, Ollama, Cloud }
-enum class CloudService(val label: String) { Gemini("Gemini"), Zen("OpenCode Zen (free)"), OpenAiCompatible("OpenAI-compatible") }
-
-private val GeminiModels = listOf("gemini-3.1-pro", "gemini-3.1-flash", "gemini-2.0-flash")
+enum class CloudService(val label: String) {
+    Gemini("Google Gemini"),
+    OpenAi("OpenAI"),
+    Claude("Anthropic Claude"),
+    Copilot("GitHub Copilot"),
+    OpenAiCompatible("Custom / Other")
+}
 
 /** What the user picked: the values [com.omnimap.domain.repository.AiInferenceRepository.saveConfiguration] takes. */
 data class ProviderChoice(val apiKey: String, val model: String, val baseUrl: String?)
@@ -42,12 +46,11 @@ class ProviderPickerState(
             initialModel != null && AgentCli.isCli(initialModel) -> ProviderKind.AgentCli
             LocalOllama.isOllama(initialBaseUrl) -> ProviderKind.Ollama
             initialModel == null && agentClis.isNotEmpty() -> ProviderKind.AgentCli
-            // Nothing saved and no agent: Zen's free models work on any device.
-            initialModel == null -> ProviderKind.Cloud
             else -> ProviderKind.Cloud
         }
     )
     var cli by mutableStateOf(initialModel?.takeIf(AgentCli::isCli) ?: agentClis.firstOrNull())
+    var cliSubModel by mutableStateOf(initialModel?.let(AgentCli::subModel) ?: "default")
 
     var ollamaUrl by mutableStateOf(initialBaseUrl?.takeIf(LocalOllama::isOllama) ?: LocalOllama.BASE_URL)
     var ollamaModels by mutableStateOf(listOfNotNull(initialModel?.takeIf { LocalOllama.isOllama(initialBaseUrl) }))
@@ -57,16 +60,22 @@ class ProviderPickerState(
     var cloud by mutableStateOf(
         when {
             initialModel?.startsWith("gemini") == true -> CloudService.Gemini
-            OpenCodeZen.isZenUrl(initialBaseUrl) -> CloudService.Zen
+            initialModel?.startsWith("claude") == true && !AgentCli.isCli(initialModel) -> CloudService.Claude
+            initialBaseUrl?.contains("githubcopilot") == true -> CloudService.Copilot
+            initialBaseUrl?.contains("api.openai.com") == true ||
+                initialModel?.startsWith("gpt-") == true ||
+                initialModel?.startsWith("o1") == true ||
+                initialModel?.startsWith("o3") == true -> CloudService.OpenAi
             initialBaseUrl != null && !LocalOllama.isOllama(initialBaseUrl) -> CloudService.OpenAiCompatible
-            else -> CloudService.Zen
+            else -> CloudService.Gemini
         }
     )
-    var geminiModel by mutableStateOf(initialModel?.takeIf { it.startsWith("gemini") } ?: GeminiModels.first())
-    var zenModels by mutableStateOf(listOfNotNull(initialModel?.takeIf { OpenCodeZen.isZenUrl(initialBaseUrl) }))
-    var zenModel by mutableStateOf(initialModel?.takeIf { OpenCodeZen.isZenUrl(initialBaseUrl) })
-    var isLoadingZen by mutableStateOf(false)
-    var customUrl by mutableStateOf(initialBaseUrl?.takeIf { !LocalOllama.isOllama(it) && !OpenCodeZen.isZenUrl(it) } ?: "https://api.openai.com/v1/")
+    var geminiModel by mutableStateOf(initialModel?.takeIf { it in CloudModelCatalogs.gemini } ?: CloudModelCatalogs.gemini.first { it == "gemini-2.0-flash" })
+    var openAiModel by mutableStateOf(initialModel?.takeIf { it in CloudModelCatalogs.openAi } ?: CloudModelCatalogs.openAi.first())
+    var claudeModel by mutableStateOf(initialModel?.takeIf { it in CloudModelCatalogs.claude } ?: CloudModelCatalogs.claude.first())
+    var copilotModel by mutableStateOf(initialModel?.takeIf { it in CloudModelCatalogs.copilot } ?: CloudModelCatalogs.copilot.first())
+
+    var customUrl by mutableStateOf(initialBaseUrl?.takeIf { !LocalOllama.isOllama(it) } ?: "https://api.openai.com/v1/")
     var customModel by mutableStateOf(
         initialModel?.takeIf { cloud == CloudService.OpenAiCompatible && !it.startsWith("gemini") && !AgentCli.isCli(it) }.orEmpty()
     )
@@ -75,11 +84,17 @@ class ProviderPickerState(
     /** The complete choice, or null while something required is missing. */
     val choice: ProviderChoice?
         get() = when (kind) {
-            ProviderKind.AgentCli -> cli?.let { ProviderChoice("", it, null) }
+            ProviderKind.AgentCli -> cli?.let {
+                val cmd = AgentCli.command(it)
+                val fullModel = AgentCli.modelId(cmd, cliSubModel.takeIf { s -> s != "default" })
+                ProviderChoice("", fullModel, null)
+            }
             ProviderKind.Ollama -> ollamaModel?.let { ProviderChoice("", it, ollamaUrl) }
             ProviderKind.Cloud -> if (apiKey.isBlank()) null else when (cloud) {
                 CloudService.Gemini -> ProviderChoice(apiKey, geminiModel, null)
-                CloudService.Zen -> zenModel?.let { ProviderChoice(apiKey, it, OpenCodeZen.BASE_URL) }
+                CloudService.OpenAi -> ProviderChoice(apiKey, openAiModel, "https://api.openai.com/v1/")
+                CloudService.Claude -> ProviderChoice(apiKey, claudeModel, "https://api.anthropic.com/v1/")
+                CloudService.Copilot -> ProviderChoice(apiKey, copilotModel, "https://api.githubcopilot.com/chat/completions")
                 CloudService.OpenAiCompatible ->
                     if (customModel.isBlank() || customUrl.isBlank()) null else ProviderChoice(apiKey, customModel, customUrl)
             }
@@ -117,29 +132,52 @@ fun ProviderPicker(state: ProviderPickerState, modifier: Modifier = Modifier) {
         }
     }
 
-    suspend fun loadZenModels() {
-        state.isLoadingZen = true
-        state.zenModels = OpenCodeZen.fetchFreeModels()
-        state.isLoadingZen = false
-        if (state.zenModel !in state.zenModels) state.zenModel = state.zenModels.firstOrNull()
-    }
-
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
         ProviderCard(
             title = "Agent on this computer",
             subtitle = if (state.agentClis.isEmpty()) {
-                "Claude Code, Codex, Copilot or Antigravity. None found on this device."
+                "OpenCode, Claude Code, Codex, Copilot or Antigravity. None found on this device."
             } else {
-                "Uses the agent's own sign-in. No API key."
+                "Uses the agent CLI's local sign-in and execution environment. No API key needed."
             },
             icon = Icons.Filled.Terminal,
             selected = state.kind == ProviderKind.AgentCli,
             enabled = state.agentClis.isNotEmpty(),
             onSelect = { state.kind = ProviderKind.AgentCli }
         ) {
+            Text("Installed Agent", style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 state.agentClis.forEach { cli ->
-                    FilterChip(selected = state.cli == cli, onClick = { state.cli = cli }, label = { Text(AgentCli.label(cli)) })
+                    val cmd = AgentCli.command(cli)
+                    FilterChip(
+                        selected = state.cli?.let(AgentCli::command) == cmd,
+                        onClick = {
+                            state.cli = cli
+                            state.cliSubModel = "default"
+                        },
+                        label = { Text(AgentCli.all[cmd] ?: cmd) }
+                    )
+                }
+            }
+
+            val currentCmd = state.cli?.let(AgentCli::command)
+            val subModels = when (currentCmd) {
+                "opencode" -> listOf("default") + AgentCli.openCodeModels
+                "copilot" -> listOf("default") + AgentCli.copilotModels
+                "claude" -> AgentCli.claudeModels
+                else -> emptyList()
+            }
+
+            if (subModels.isNotEmpty()) {
+                Text("Model Variant", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    subModels.forEach { modelName ->
+                        FilterChip(
+                            selected = state.cliSubModel == modelName,
+                            onClick = { state.cliSubModel = modelName },
+                            label = { Text(modelName) }
+                        )
+                    }
                 }
             }
         }
@@ -176,22 +214,16 @@ fun ProviderPicker(state: ProviderPickerState, modifier: Modifier = Modifier) {
 
         ProviderCard(
             title = "Cloud API",
-            subtitle = "Gemini, OpenCode Zen's free models, or any OpenAI-compatible service.",
+            subtitle = "Google Gemini, OpenAI, Anthropic Claude, GitHub Copilot, or custom endpoint.",
             icon = Icons.Filled.Cloud,
             selected = state.kind == ProviderKind.Cloud,
-            onSelect = {
-                state.kind = ProviderKind.Cloud
-                if (state.cloud == CloudService.Zen && state.zenModels.isEmpty()) scope.launch { loadZenModels() }
-            }
+            onSelect = { state.kind = ProviderKind.Cloud }
         ) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 CloudService.entries.forEach { service ->
                     FilterChip(
                         selected = state.cloud == service,
-                        onClick = {
-                            state.cloud = service
-                            if (service == CloudService.Zen && state.zenModels.isEmpty()) scope.launch { loadZenModels() }
-                        },
+                        onClick = { state.cloud = service },
                         label = { Text(service.label) }
                     )
                 }
@@ -199,24 +231,24 @@ fun ProviderPicker(state: ProviderPickerState, modifier: Modifier = Modifier) {
             Text("Model", style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(top = 4.dp))
             when (state.cloud) {
                 CloudService.Gemini -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    GeminiModels.forEach { model ->
+                    CloudModelCatalogs.gemini.forEach { model ->
                         FilterChip(selected = state.geminiModel == model, onClick = { state.geminiModel = model }, label = { Text(model) })
                     }
                 }
-                CloudService.Zen -> {
-                    if (state.isLoadingZen) {
-                        Text("Loading free models…", style = MaterialTheme.typography.bodySmall)
+                CloudService.OpenAi -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CloudModelCatalogs.openAi.forEach { model ->
+                        FilterChip(selected = state.openAiModel == model, onClick = { state.openAiModel = model }, label = { Text(model) })
                     }
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.zenModels.forEach { model ->
-                            FilterChip(selected = state.zenModel == model, onClick = { state.zenModel = model }, label = { Text(model) })
-                        }
+                }
+                CloudService.Claude -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CloudModelCatalogs.claude.forEach { model ->
+                        FilterChip(selected = state.claudeModel == model, onClick = { state.claudeModel = model }, label = { Text(model) })
                     }
-                    Text(
-                        "Zen is a cloud service: your prompts and graph context go to opencode.ai. The free line-up changes over time.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
-                    )
+                }
+                CloudService.Copilot -> FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CloudModelCatalogs.copilot.forEach { model ->
+                        FilterChip(selected = state.copilotModel == model, onClick = { state.copilotModel = model }, label = { Text(model) })
+                    }
                 }
                 CloudService.OpenAiCompatible -> {
                     OutlinedTextField(
@@ -238,7 +270,7 @@ fun ProviderPicker(state: ProviderPickerState, modifier: Modifier = Modifier) {
             OutlinedTextField(
                 value = state.apiKey,
                 onValueChange = { state.apiKey = it },
-                label = { Text("API key") },
+                label = { Text(if (state.cloud == CloudService.Copilot) "GitHub Token" else "API key") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 leadingIcon = { Icon(Icons.Filled.Key, contentDescription = null) },

@@ -69,16 +69,22 @@ class AppContainer(private val context: Context) {
         ModelRoutingAiRepository(
             geminiRepo = GeminiRepositoryImpl(
                 apiKey = "",
-                selectedModel = "gemini-3.1-pro",
+                selectedModel = "gemini-2.0-flash",
                 settingsManager = settingsManager
             ),
             openAiRepo = OpenAiRepositoryImpl(
                 apiKey = "",
-                selectedModel = "llama3.1",
+                selectedModel = "gpt-4o-mini",
                 baseUrl = null,
                 settingsManager = settingsManager
             ),
-            settingsManager = settingsManager
+            anthropicRepo = com.omnimap.data.repository.AnthropicRepositoryImpl(
+                apiKey = "",
+                selectedModel = "claude-3-5-sonnet-20241022",
+                settingsManager = settingsManager
+            ),
+            settingsManager = settingsManager,
+            initialModel = "gemini-2.0-flash"
         )
     }
 }

@@ -67,23 +67,27 @@ class OpenAiRepositoryImpl(
     private class ApiException(val code: Int, message: String) : Exception(message)
 
     private suspend fun postChatCompletion(url: String, contextPrompt: String, jsonMode: Boolean): Result<String> {
+        val systemRole = if (selectedModel.startsWith("o1") || selectedModel.startsWith("o3")) "developer" else "system"
         val requestBody = buildMap<String, Any> {
             put("model", selectedModel)
             put(
                 "messages", listOf(
-                    mapOf("role" to "system", "content" to "You are a graph architect. Output ONLY valid JSON."),
+                    mapOf("role" to systemRole, "content" to "You are a graph architect. Output ONLY valid JSON."),
                     mapOf("role" to "user", "content" to contextPrompt)
                 )
             )
-            if (jsonMode) put("response_format", mapOf("type" to "json_object"))
+            if (jsonMode && !selectedModel.startsWith("o1-mini")) put("response_format", mapOf("type" to "json_object"))
         }
 
         val body = gson.toJson(requestBody).toRequestBody("application/json".toMediaType())
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url(url)
             .addHeader("Authorization", "Bearer $apiKey")
-            .post(body)
-            .build()
+        if (url.contains("githubcopilot")) {
+            requestBuilder.addHeader("Editor-Version", "vscode/1.95.0")
+            requestBuilder.addHeader("Copilot-Integration-Id", "vscode-chat")
+        }
+        val request = requestBuilder.post(body).build()
 
         return withContext(Dispatchers.IO) {
             try {

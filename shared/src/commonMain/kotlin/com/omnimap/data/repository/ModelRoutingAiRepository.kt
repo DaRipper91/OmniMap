@@ -10,15 +10,17 @@ import kotlinx.coroutines.flow.onEach
 
 /**
  * Sends each request to Gemini when the selected model is a Gemini model,
- * and to the OpenAI-compatible client (OpenCode Zen, Ollama, OpenAI…) otherwise.
+ * to Anthropic when it is a Claude cloud model, to CliAiRepository when it
+ * is a desktop CLI model, and to the OpenAI-compatible client (OpenAI, Ollama, Copilot…) otherwise.
  */
 class ModelRoutingAiRepository(
     private val geminiRepo: AiInferenceRepository,
     private val openAiRepo: AiInferenceRepository,
+    private val anthropicRepo: AiInferenceRepository? = null,
     /** Desktop only: runs installed agent CLIs for `cli:*` models. */
     private val cliRepo: AiInferenceRepository? = null,
     private val settingsManager: SettingsManager,
-    initialModel: String = "gemini-3.1-pro"
+    initialModel: String = "gemini-2.0-flash"
 ) : AiInferenceRepository {
 
     private var currentModel: String = initialModel
@@ -31,8 +33,9 @@ class ModelRoutingAiRepository(
     }
 
     private fun getActiveRepo(): AiInferenceRepository = when {
-        currentModel.startsWith("gemini") -> geminiRepo
         cliRepo != null && AgentCli.isCli(currentModel) -> cliRepo
+        currentModel.startsWith("gemini") -> geminiRepo
+        currentModel.startsWith("claude") && anthropicRepo != null -> anthropicRepo
         else -> openAiRepo
     }
 

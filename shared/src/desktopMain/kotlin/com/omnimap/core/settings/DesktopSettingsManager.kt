@@ -23,7 +23,7 @@ class DesktopSettingsManager(
     }
 
     private val _apiKey = MutableStateFlow(props.getProperty(KEY_API_KEY))
-    private val _selectedModel = MutableStateFlow(props.getProperty(KEY_MODEL) ?: "gemini-3.1-pro")
+    private val _selectedModel = MutableStateFlow(props.getProperty(KEY_MODEL) ?: "gemini-2.0-flash")
     private val _baseUrl = MutableStateFlow(props.getProperty(KEY_BASE_URL))
     private val _firstLaunch = MutableStateFlow(props.getProperty(KEY_FIRST_LAUNCH)?.toBoolean() ?: true)
 
